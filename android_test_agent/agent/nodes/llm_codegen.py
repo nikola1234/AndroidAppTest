@@ -10,6 +10,7 @@ import yaml
 from android_test_agent.agent.config import AndroidTestConfig
 from android_test_agent.agent.runtime_skills import RuntimeSkillLoader
 from android_test_agent.agent.state import AgentState
+from android_test_agent.dsl.generated_registry import GeneratedFileRegistry, source_case_key
 from android_test_agent.dsl.schema import normalize_test_name, validate_intent_dsl
 from android_test_agent.llm.base import LLMClient
 
@@ -21,6 +22,7 @@ class LlmCodegenNode:
         self._config = config
         self._llm = llm
         self._skills = RuntimeSkillLoader()
+        self._registry = GeneratedFileRegistry(config)
 
     def __call__(self, state: AgentState) -> AgentState:
         if not self._llm:
@@ -28,7 +30,10 @@ class LlmCodegenNode:
 
         dsl = state.get("resolved_dsl") or state["dsl"]
         validate_intent_dsl(dsl)
+        case_key = source_case_key(state.get("raw_case"))
+        self._registry.cleanup_previous(case_key)
         generated_files = self._write(dsl)
+        self._registry.remember(case_key, generated_files)
         metadata = dict(state.get("metadata", {}))
         metadata["codegen_mode"] = "llm"
         return {**state, "dsl": dsl, "generated_files": generated_files, "metadata": metadata}
