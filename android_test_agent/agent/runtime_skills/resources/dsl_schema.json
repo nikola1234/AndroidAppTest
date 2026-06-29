@@ -15,6 +15,8 @@
     {"action": "launch_app"},
     {"action": "tap", "target": {"name": "login_button", "intent": "登录按钮"}},
     {"action": "input", "target": {"name": "username_field", "intent": "账号输入框"}, "value": "test_user"},
-    {"action": "assert_text", "text": "首页"}
+    {"action": "assert_text", "text": "首页"},
+    {"action": "scroll_to_text", "text": "Views"},
+    {"action": "assert_text", "text": "Views"}
   ]
 }

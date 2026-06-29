@@ -250,6 +250,11 @@ def xpath_literal(value):
     return "concat(" + ', "\\'", '.join("'" + part + "'" for part in value.split("'")) + ")"
 
 
+def uiselector_literal(value):
+    value = str(value).replace("\\\\", "\\\\\\\\").replace('"', '\\\\"')
+    return f'"{{value}}"'
+
+
 def wait_for(driver, target, action):
     resolved_target = resolve_locator(driver, target, action)
     attempts = []
@@ -305,6 +310,23 @@ def find_visible_text(driver, text):
     elements = driver.find_elements(By.XPATH, f"//*[@text={{literal}} or @content-desc={{literal}}]")
     visible_elements = [element for element in elements if safe_is_displayed(element)]
     return visible_elements[0] if visible_elements else False
+
+
+def scroll_to_text(driver, text):
+    selector = (
+        "new UiScrollable(new UiSelector().scrollable(true))"
+        f".scrollIntoView(new UiSelector().text({{uiselector_literal(text)}}))"
+    )
+    try:
+        driver.implicitly_wait(0)
+        try:
+            driver.find_element("-android uiautomator", selector)
+            return wait_for_text(driver, text)
+        finally:
+            driver.implicitly_wait(IMPLICIT_WAIT_SECONDS)
+    except Exception as exc:
+        write_locator_failure_artifacts(driver, "scroll_to_text", {{"text": text}}, exc)
+        raise
 
 
 def write_locator_failure_artifacts(driver, action, target, error):
@@ -371,6 +393,10 @@ def run_step(driver, step):
 
     if action == "assert_text":
         wait_for_text(driver, str(step["text"]))
+        return
+
+    if action == "scroll_to_text":
+        scroll_to_text(driver, str(step["text"]))
         return
 
     if action == "back":

@@ -14,10 +14,10 @@ App 信息：
 3. 设备已解锁，且没有系统弹窗遮挡应用。
 
 测试步骤意图：
-打开 ApiDemos，等待首页加载完成，观察首页是否展示多个示例分类入口。
+打开 ApiDemos，先验证首屏分类；然后向下滚动首页列表，继续验证 Graphics、Media、OS、Preference、Text、Views 等分类。
 
 期望结果：
-ApiDemos 首页成功展示，并且可以看到类似 Accessibility、Animation、App、Content、Graphics、Media、OS、Preference、Text、Views 等分类入口。
+通过滚动列表，可以依次看到 Accessibility、Animation、App、Content、Graphics、Media、OS、Preference、Text、Views。
 
 补充说明：
-该用例用于验证最基础的启动能力和首页可见性。Agent 应根据当前页面结构自动选择稳定的页面标题或分类文本作为断言，不需要人工编写 locator。
+该用例用于验证最基础的启动能力和首页列表可滚动性。Agent 应先检查首屏可见分类，再通过滚动列表继续检查屏幕外分类，不需要人工编写 locator。

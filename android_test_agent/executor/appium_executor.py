@@ -55,6 +55,9 @@ class AppiumExecutor:
         if action == "assert_text":
             self._wait_for_text(str(step["text"]))
             return
+        if action == "scroll_to_text":
+            self._scroll_to_text(str(step["text"]))
+            return
         if action == "back":
             self._driver.back()
             return
@@ -150,6 +153,24 @@ class AppiumExecutor:
         visible_elements = [element for element in elements if self._safe_is_displayed(element)]
         return visible_elements[0] if visible_elements else False
 
+    def _scroll_to_text(self, text: str):
+        if not self._driver:
+            raise RuntimeError("Appium driver has not started")
+        selector = (
+            "new UiScrollable(new UiSelector().scrollable(true))"
+            f".scrollIntoView(new UiSelector().text({self._uiselector_literal(text)}))"
+        )
+        try:
+            self._driver.implicitly_wait(0)
+            try:
+                self._driver.find_element("-android uiautomator", selector)
+                return self._wait_for_text(text)
+            finally:
+                self._driver.implicitly_wait(self._config.implicit_wait_seconds)
+        except Exception as exc:
+            self._write_locator_failure_artifacts("scroll_to_text", {"text": text}, exc)
+            raise
+
     def _find_matching_element(self, driver: Any, by: str, value: str, target: dict[str, Any], action: str):
         elements = driver.find_elements(by, value)
         visible_elements = [element for element in elements if self._safe_is_displayed(element)]
@@ -235,6 +256,10 @@ class AppiumExecutor:
         if '"' not in value:
             return '"' + value + '"'
         return "concat(" + ', "\'", '.join("'" + part + "'" for part in value.split("'")) + ")"
+
+    def _uiselector_literal(self, value: Any) -> str:
+        value = str(value).replace("\\", "\\\\").replace('"', '\\"')
+        return f'"{value}"'
 
     def _candidate_targets(self, resolved_target: dict[str, Any]) -> list[dict[str, Any]]:
         candidates: list[dict[str, Any]] = []

@@ -70,11 +70,26 @@ class PlannerNode:
 
     def _text_assertions(self, requirements: dict[str, Any]) -> list[dict[str, str]]:
         expected = str(requirements.get("expected_result") or "").strip()
-        source = expected or str(requirements.get("description") or "")
+        description = str(requirements.get("description") or "")
+        source = expected or description
         tokens = self._visible_text_tokens(source)
         if tokens:
+            if self._requires_scroll(expected, description) and len(tokens) > 4:
+                return self._scrolling_text_assertions(tokens)
             return [{"action": "assert_text", "text": token} for token in tokens]
         return [{"action": "assert_text", "text": expected or requirements["name"]}]
+
+    def _scrolling_text_assertions(self, tokens: list[str]) -> list[dict[str, str]]:
+        first_screen_count = min(4, len(tokens))
+        steps = [{"action": "assert_text", "text": token} for token in tokens[:first_screen_count]]
+        for token in tokens[first_screen_count:]:
+            steps.append({"action": "scroll_to_text", "text": token})
+            steps.append({"action": "assert_text", "text": token})
+        return steps
+
+    def _requires_scroll(self, *values: str) -> bool:
+        text = " ".join(values)
+        return any(keyword in text for keyword in ("滚动", "向下", "滑动", "下滑", "scroll"))
 
     def _visible_text_tokens(self, text: str) -> list[str]:
         ignored = {

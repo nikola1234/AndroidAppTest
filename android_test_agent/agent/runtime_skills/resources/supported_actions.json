@@ -31,7 +31,13 @@
       "requires_text": false
     },
     "assert_text": {
-      "description": "Assert that text is present in the current page source.",
+      "description": "Assert that text is visible on the current screen.",
+      "requires_target": false,
+      "requires_value": false,
+      "requires_text": true
+    },
+    "scroll_to_text": {
+      "description": "Scroll a visible Android scrollable container until the requested text is visible.",
       "requires_target": false,
       "requires_value": false,
       "requires_text": true

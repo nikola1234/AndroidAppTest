@@ -11,6 +11,7 @@ DEFAULT_ACTION_SPECS: dict[str, dict[str, Any]] = {
     "wait_visible": {"requires_target": True, "requires_value": False, "requires_text": False},
     "assert_visible": {"requires_target": True, "requires_value": False, "requires_text": False},
     "assert_text": {"requires_target": False, "requires_value": False, "requires_text": True},
+    "scroll_to_text": {"requires_target": False, "requires_value": False, "requires_text": True},
     "back": {"requires_target": False, "requires_value": False, "requires_text": False},
 }
 
@@ -44,7 +45,7 @@ def validate_intent_dsl(dsl: dict[str, Any]) -> None:
         if spec.get("requires_value") and "value" not in step:
             raise ValueError(f"Step {index} action 'input' requires value")
         if spec.get("requires_text") and not step.get("text"):
-            raise ValueError(f"Step {index} action 'assert_text' requires text")
+            raise ValueError(f"Step {index} action '{action}' requires text")
 
 
 def validate_executable_dsl(dsl: dict[str, Any]) -> None:
