@@ -29,3 +29,17 @@ python main.py --case-file tests/ApiDemos/01_app_launch_home_categories.yaml
 python -m pytest generated\tests\test_01_app_launch_home_categories.py -q
 python -m pytest generated\tests\test_01_app_launch_home_categories.py -vv -s --tb=short
 echo $LASTEXITCODE
+
+(.venv) PS D:\android_test\AndroidAppTest>
+(.venv) PS D:\android_test\AndroidAppTest> python -m pytest generated\tests\test_01_app_launch_home_categories.py -vv -s --tb=short
+===================================================================================== test session starts =====================================================================================
+platform win32 -- Python 3.14.6, pytest-8.4.2, pluggy-1.6.0 -- D:\android_test\AndroidAppTest\.venv\Scripts\python.exe
+cachedir: .pytest_cache
+rootdir: D:\android_test\AndroidAppTest
+plugins: anyio-4.14.1, langsmith-0.9.3
+collected 1 item
+
+generated/tests/test_01_app_launch_home_categories.py::test_01_app_launch_home_categories PASSED
+
+===================================================================================== 1 passed in 13.38s ======================================================================================
+(.venv) PS D:\android_test\AndroidAppTest>
