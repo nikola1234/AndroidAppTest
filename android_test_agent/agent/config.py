@@ -22,6 +22,7 @@ class AndroidTestConfig:
     llm_api_key: str | None = None
     llm_base_url: str = "https://api.deepseek.com"
     llm_temperature: float = 0.2
+    llm_log_calls: bool = True
 
     appium_server_url: str = "http://127.0.0.1:4723"
     platform_name: str = "Android"
@@ -54,6 +55,7 @@ class AndroidTestConfig:
             llm_api_key=os.getenv("DEEPSEEK_API_KEY"),
             llm_base_url=os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com"),
             llm_temperature=float(os.getenv("ATA_LLM_TEMPERATURE", "0.2")),
+            llm_log_calls=os.getenv("ATA_LLM_LOG_CALLS", "true").lower() in {"1", "true", "yes"},
             appium_server_url=os.getenv("APPIUM_SERVER_URL", "http://127.0.0.1:4723"),
             platform_name=os.getenv("ANDROID_PLATFORM_NAME", "Android"),
             device_name=os.getenv("ANDROID_DEVICE_NAME", "Android Emulator"),

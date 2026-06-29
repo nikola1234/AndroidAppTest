@@ -90,6 +90,15 @@ class AgentGraph:
             config={"configurable": {"thread_id": checkpoint_thread_id}},
         )
 
+    def close(self) -> None:
+        """Release LangGraph checkpoint resources held by this graph."""
+
+        if self._checkpointer_context is None:
+            return
+        self._checkpointer_context.__exit__(None, None, None)
+        self._checkpointer_context = None
+        self._checkpointer = None
+
     def _build_graph(self) -> Any:
         try:
             from langgraph.graph import END, StateGraph

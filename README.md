@@ -145,6 +145,12 @@ DEEPSEEK_API_KEY=your_api_key
 DEEPSEEK_MODEL=deepseek-chat
 ```
 
+默认会在 stderr 打印 DeepSeek 调用开始、结束、调用位置和耗时，便于排查卡顿。需要关闭时：
+
+```env
+ATA_LLM_LOG_CALLS=false
+```
+
 ## DSL 示例
 
 ```yaml

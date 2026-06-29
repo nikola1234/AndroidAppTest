@@ -44,10 +44,12 @@ def main() -> None:
         else:
             raw_case = args.case or _read_case_file(args.case_file) or _default_case()
             state = agent.run(raw_case, thread_id=args.thread_id)
+        print(json.dumps(_summary(state), ensure_ascii=False, indent=2))
     except HumanReviewRejected as exc:
         print(json.dumps({"status": "human_review_required", "message": str(exc)}, ensure_ascii=False, indent=2))
         raise SystemExit(2) from exc
-    print(json.dumps(_summary(state), ensure_ascii=False, indent=2))
+    finally:
+        agent.close()
 
 
 def _read_case_file(case_file: str | None) -> str | None:

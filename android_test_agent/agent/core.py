@@ -49,6 +49,9 @@ class AndroidTestAgent:
     def resume_from_checkpoint(self, checkpoint_path: str, thread_id: str | None = None) -> AgentState:
         return self._graph.resume_from_checkpoint(checkpoint_path, thread_id=thread_id)
 
+    def close(self) -> None:
+        self._graph.close()
+
     def _build_llm(self, config: AndroidTestConfig) -> LLMClient | None:
         if config.llm_provider == "deepseek" and config.llm_api_key:
             from android_test_agent.llm.deepseek_client import DeepSeekClient
