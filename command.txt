@@ -17,7 +17,6 @@ python -m venv .venv
 pip install -r requirements.txt
 
 
-
 在当前电脑提交并 push：
 
 git add android_test_agent/dsl/codegen.py
@@ -27,3 +26,4 @@ git push
 
 git pull
 python main.py --case-file tests/ApiDemos/01_app_launch_home_categories.yaml
+python -m pytest generated\tests\test_01_app_launch_home_categories.py -q
