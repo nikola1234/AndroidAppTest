@@ -27,3 +27,5 @@ git push
 git pull
 python main.py --case-file tests/ApiDemos/01_app_launch_home_categories.yaml
 python -m pytest generated\tests\test_01_app_launch_home_categories.py -q
+python -m pytest generated\tests\test_01_app_launch_home_categories.py -vv -s --tb=short
+echo $LASTEXITCODE
