@@ -16,9 +16,9 @@ class PytestAppiumCodeGenerator:
     def __init__(self, config: AndroidTestConfig) -> None:
         self._config = config
 
-    def write(self, dsl: dict[str, Any]) -> dict[str, str]:
+    def write(self, dsl: dict[str, Any], output_name: str | None = None) -> dict[str, str]:
         validate_intent_dsl(dsl)
-        test_name = normalize_test_name(dsl["name"])
+        test_name = output_name or normalize_test_name(dsl["name"])
         dsl_dir = self._config.generated_dir / "dsl"
         tests_dir = self._config.generated_dir / "tests"
         dsl_dir.mkdir(parents=True, exist_ok=True)
@@ -27,11 +27,11 @@ class PytestAppiumCodeGenerator:
         dsl_path = dsl_dir / f"{test_name}.yaml"
         test_path = tests_dir / f"test_{test_name}.py"
         dsl_path.write_text(yaml.safe_dump(dsl, allow_unicode=True, sort_keys=False), encoding="utf-8")
-        test_path.write_text(self.render_pytest(dsl), encoding="utf-8")
+        test_path.write_text(self.render_pytest(dsl, test_name), encoding="utf-8")
         return {"dsl": str(dsl_path), "pytest": str(test_path)}
 
-    def render_pytest(self, dsl: dict[str, Any]) -> str:
-        test_name = normalize_test_name(dsl["name"])
+    def render_pytest(self, dsl: dict[str, Any], test_name: str | None = None) -> str:
+        test_name = test_name or normalize_test_name(dsl["name"])
         escaped_dsl = json.dumps(dsl, ensure_ascii=False, indent=2)
         capabilities = self._capabilities()
         escaped_capabilities = json.dumps(capabilities, ensure_ascii=False, indent=2)

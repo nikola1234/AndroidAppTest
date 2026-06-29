@@ -49,7 +49,12 @@ class AgentGraph:
         self._checkpointer: Any | None = None
         self._graph = self._build_graph()
 
-    def run(self, raw_case: str, thread_id: str | None = None) -> AgentState:
+    def run(
+        self,
+        raw_case: str,
+        thread_id: str | None = None,
+        source_case_path: str | None = None,
+    ) -> AgentState:
         checkpoint_thread_id = thread_id or f"ata-{uuid4().hex}"
         state: AgentState = {
             "raw_case": raw_case,
@@ -60,6 +65,7 @@ class AgentGraph:
                 "agent_version": "0.1.0",
                 "checkpoint_thread_id": checkpoint_thread_id,
                 "checkpoint_files": [],
+                "source_case_path": source_case_path,
             },
         }
         return self._graph.invoke(

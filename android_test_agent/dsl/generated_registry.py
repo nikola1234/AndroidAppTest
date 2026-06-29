@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any
 
 from android_test_agent.agent.config import AndroidTestConfig
+from android_test_agent.dsl.schema import normalize_test_name
 
 
 class GeneratedFileRegistry:
@@ -63,3 +64,12 @@ def source_case_key(raw_case: str | None) -> str | None:
     if not raw_case:
         return None
     return hashlib.sha256(raw_case.encode("utf-8")).hexdigest()[:16]
+
+
+def output_name_from_case_path(source_case_path: str | None, fallback_name: str) -> str:
+    if source_case_path:
+        stem = Path(source_case_path).stem
+        normalized = normalize_test_name(stem)
+        if normalized:
+            return normalized
+    return normalize_test_name(fallback_name)

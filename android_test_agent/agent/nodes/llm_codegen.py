@@ -10,7 +10,11 @@ import yaml
 from android_test_agent.agent.config import AndroidTestConfig
 from android_test_agent.agent.runtime_skills import RuntimeSkillLoader
 from android_test_agent.agent.state import AgentState
-from android_test_agent.dsl.generated_registry import GeneratedFileRegistry, source_case_key
+from android_test_agent.dsl.generated_registry import (
+    GeneratedFileRegistry,
+    output_name_from_case_path,
+    source_case_key,
+)
 from android_test_agent.dsl.schema import normalize_test_name, validate_intent_dsl
 from android_test_agent.llm.base import LLMClient
 
@@ -30,16 +34,19 @@ class LlmCodegenNode:
 
         dsl = state.get("resolved_dsl") or state["dsl"]
         validate_intent_dsl(dsl)
+        output_name = output_name_from_case_path(
+            state.get("metadata", {}).get("source_case_path"),
+            dsl["name"],
+        )
         case_key = source_case_key(state.get("raw_case"))
         self._registry.cleanup_previous(case_key)
-        generated_files = self._write(dsl)
+        generated_files = self._write(dsl, output_name)
         self._registry.remember(case_key, generated_files)
         metadata = dict(state.get("metadata", {}))
         metadata["codegen_mode"] = "llm"
         return {**state, "dsl": dsl, "generated_files": generated_files, "metadata": metadata}
 
-    def _write(self, dsl: dict[str, Any]) -> dict[str, str]:
-        test_name = normalize_test_name(dsl["name"])
+    def _write(self, dsl: dict[str, Any], test_name: str) -> dict[str, str]:
         dsl_dir = self._config.generated_dir / "dsl"
         tests_dir = self._config.generated_dir / "tests"
         dsl_dir.mkdir(parents=True, exist_ok=True)

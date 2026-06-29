@@ -43,7 +43,7 @@ def main() -> None:
             state = agent.resume_from_checkpoint(args.resume_from_checkpoint, thread_id=args.thread_id)
         else:
             raw_case = args.case or _read_case_file(args.case_file) or _default_case()
-            state = agent.run(raw_case, thread_id=args.thread_id)
+            state = agent.run(raw_case, thread_id=args.thread_id, source_case_path=args.case_file)
         print(json.dumps(_summary(state), ensure_ascii=False, indent=2))
     except HumanReviewRejected as exc:
         print(json.dumps({"status": "human_review_required", "message": str(exc)}, ensure_ascii=False, indent=2))
