@@ -1,13 +1,15 @@
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
-from typing import Callable
+from typing import Any, Callable
 
 import yaml
 
 from android_test_agent.agent.config import AndroidTestConfig
 from android_test_agent.agent.state import AgentState
+from android_test_agent.dsl.generated_registry import output_name_from_case_path, source_case_key
 
 
 class HumanReviewRejected(RuntimeError):
@@ -27,7 +29,7 @@ class HumanReviewNode:
 
     def __call__(self, state: AgentState) -> AgentState:
         intent_dsl = state["intent_dsl"]
-        review_path = self._write_review_file(intent_dsl)
+        review_path = self._write_review_file(intent_dsl, state)
         review = {
             "required": self._config.review_intent_dsl,
             "approved": not self._config.review_intent_dsl,
@@ -70,13 +72,70 @@ class HumanReviewNode:
             "metadata": metadata,
         }
 
-    def _write_review_file(self, intent_dsl: dict) -> str:
+    def _write_review_file(self, intent_dsl: dict, state: AgentState) -> str:
         output_dir = self._config.reports_dir / "reviews"
         output_dir.mkdir(parents=True, exist_ok=True)
-        test_name = self._safe_name(str(intent_dsl.get("name") or "intent_dsl"))
+        metadata = state.get("metadata", {})
+        test_name = output_name_from_case_path(
+            metadata.get("source_case_path"),
+            str(intent_dsl.get("name") or "intent_dsl"),
+        )
         path = output_dir / f"{test_name}_intent_dsl.yaml"
+        case_key = source_case_key(state.get("raw_case"))
+        self._cleanup_previous_review(output_dir, case_key, path, intent_dsl)
         path.write_text(yaml.safe_dump(intent_dsl, allow_unicode=True, sort_keys=False), encoding="utf-8")
+        self._remember_review(output_dir, case_key, path)
         return str(path)
+
+    def _cleanup_previous_review(
+        self,
+        output_dir: Path,
+        case_key: str | None,
+        path: Path,
+        intent_dsl: dict,
+    ) -> None:
+        registry = self._read_registry(output_dir)
+        entry = registry.get(case_key or "")
+        if isinstance(entry, dict) and isinstance(entry.get("path"), str):
+            self._delete_file(Path(entry["path"]))
+
+        self._delete_file(path)
+        legacy_name = self._safe_name(str(intent_dsl.get("name") or "intent_dsl"))
+        self._delete_file(output_dir / f"{legacy_name}_intent_dsl.yaml")
+
+        if case_key:
+            registry.pop(case_key, None)
+            self._write_registry(output_dir, registry)
+
+    def _remember_review(self, output_dir: Path, case_key: str | None, path: Path) -> None:
+        if not case_key:
+            return
+        registry = self._read_registry(output_dir)
+        registry[case_key] = {"path": str(path)}
+        self._write_registry(output_dir, registry)
+
+    def _read_registry(self, output_dir: Path) -> dict[str, Any]:
+        path = output_dir / ".review_cases.json"
+        if not path.exists():
+            return {}
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            return {}
+        return data if isinstance(data, dict) else {}
+
+    def _write_registry(self, output_dir: Path, registry: dict[str, Any]) -> None:
+        (output_dir / ".review_cases.json").write_text(
+            json.dumps(registry, ensure_ascii=False, indent=2, sort_keys=True),
+            encoding="utf-8",
+        )
+
+    def _delete_file(self, path: Path) -> None:
+        try:
+            if path.exists() and path.is_file():
+                path.unlink()
+        except OSError:
+            return
 
     def _safe_name(self, value: str) -> str:
         normalized = "".join(char.lower() if char.isalnum() else "_" for char in value.strip())
