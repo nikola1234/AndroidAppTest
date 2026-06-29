@@ -1,0 +1,28 @@
+#.env 的内容
+DEEPSEEK_API_KEY=你的_deepseek_key
+DEEPSEEK_MODEL=deepseek-chat
+DEEPSEEK_BASE_URL=https://api.deepseek.com
+
+APPIUM_SERVER_URL=http://127.0.0.1:4723
+ANDROID_DEVICE_NAME=你的adb设备名
+ANDROID_APP_PACKAGE=你的包名
+ANDROID_APP_ACTIVITY=你的启动Activity
+ANDROID_APK_PATH=C:\path\to\your.apk
+ATA_EXECUTE_GENERATED_TESTS=true
+
+##命令
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+
+
+
+在当前电脑提交并 push：
+
+git add android_test_agent/dsl/codegen.py
+git commit -m "Fix generated pytest JSON literals"
+git push
+另一台电脑：
+
+git pull
+python main.py --case-file tests/ApiDemos/01_app_launch_home_categories.yaml
