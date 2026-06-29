@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
+import re
 from typing import Any
 
 from android_test_agent.agent.runtime_skills import RuntimeSkillLoader
@@ -59,18 +60,42 @@ class PlannerNode:
         return None
 
     def _fallback(self, requirements: dict[str, Any]) -> dict[str, Any]:
+        text_assertions = self._text_assertions(requirements)
         return {
             "name": requirements["name"],
             "description": requirements.get("description", ""),
-            "steps": [
-                {"action": "launch_app"},
-                {
-                    "action": "assert_text",
-                    "text": requirements.get("expected_result") or requirements["name"],
-                },
-            ],
+            "steps": [{"action": "launch_app"}, *text_assertions],
             "assertions": [requirements.get("expected_result")] if requirements.get("expected_result") else [],
         }
+
+    def _text_assertions(self, requirements: dict[str, Any]) -> list[dict[str, str]]:
+        expected = str(requirements.get("expected_result") or "").strip()
+        source = expected or str(requirements.get("description") or "")
+        tokens = self._visible_text_tokens(source)
+        if tokens:
+            return [{"action": "assert_text", "text": token} for token in tokens]
+        return [{"action": "assert_text", "text": expected or requirements["name"]}]
+
+    def _visible_text_tokens(self, text: str) -> list[str]:
+        ignored = {
+            "Android",
+            "ApiDemos",
+            "Appium",
+            "DSL",
+            "LLM",
+            "UI",
+            "Agent",
+            "Test",
+        }
+        tokens = re.findall(r"\b[A-Z][A-Za-z0-9_]{1,}\b", text)
+        unique: list[str] = []
+        seen: set[str] = set()
+        for token in tokens:
+            if token in ignored or token in seen:
+                continue
+            seen.add(token)
+            unique.append(token)
+        return unique
 
     def _strip_generated_locators(self, plan: dict[str, Any]) -> dict[str, Any]:
         updated = deepcopy(plan)

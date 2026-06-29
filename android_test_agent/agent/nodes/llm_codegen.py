@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
 import re
 from typing import Any
 
 import yaml
 
+from android_test_agent.agent.capabilities import build_android_capabilities
 from android_test_agent.agent.config import AndroidTestConfig
 from android_test_agent.agent.runtime_skills import RuntimeSkillLoader
 from android_test_agent.agent.state import AgentState
@@ -110,7 +110,7 @@ class LlmCodegenNode:
             "test_name": test_name,
             "dsl": dsl,
             "appium_server_url": self._config.appium_server_url,
-            "capabilities": self._capabilities(),
+            "capabilities": self._capabilities(dsl),
             "implicit_wait_seconds": self._config.implicit_wait_seconds,
             "explicit_wait_seconds": self._config.explicit_wait_seconds,
             "project_runtime_imports": {
@@ -127,19 +127,8 @@ class LlmCodegenNode:
             indent=2,
         )
 
-    def _capabilities(self) -> dict[str, Any]:
-        capabilities: dict[str, Any] = {
-            "platformName": self._config.platform_name,
-            "appium:automationName": "UiAutomator2",
-            "appium:deviceName": self._config.device_name,
-        }
-        if self._config.app_package:
-            capabilities["appium:appPackage"] = self._config.app_package
-        if self._config.app_activity:
-            capabilities["appium:appActivity"] = self._config.app_activity
-        if self._config.apk_path:
-            capabilities["appium:app"] = str(Path(self._config.apk_path))
-        return capabilities
+    def _capabilities(self, dsl: dict[str, Any]) -> dict[str, Any]:
+        return build_android_capabilities(self._config, dsl)
 
     def _extract_code(self, text: str) -> str:
         stripped = text.strip()

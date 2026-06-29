@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from typing import Any
 
 import yaml
@@ -56,10 +57,28 @@ class AnalyzerNode:
         return None
 
     def _fallback(self, raw_case: str) -> dict[str, Any]:
-        title = raw_case.strip().splitlines()[0][:60] if raw_case.strip() else "generated_android_test"
+        title = self._title(raw_case)
         return {
             "name": title,
             "description": raw_case,
             "preconditions": [],
-            "expected_result": "Test finishes without functional errors.",
+            "expected_result": self._section(raw_case, "期望结果")
+            or "Test finishes without functional errors.",
         }
+
+    def _title(self, raw_case: str) -> str:
+        for line in raw_case.splitlines():
+            stripped = line.strip()
+            if stripped:
+                return stripped[:60]
+        return "generated_android_test"
+
+    def _section(self, raw_case: str, heading: str) -> str:
+        pattern = re.compile(
+            rf"{re.escape(heading)}\s*[:：]\s*(.*?)(?=\n\s*[\w\u4e00-\u9fff ]+\s*[:：]|\Z)",
+            re.DOTALL,
+        )
+        match = pattern.search(raw_case)
+        if not match:
+            return ""
+        return " ".join(line.strip() for line in match.group(1).splitlines() if line.strip())

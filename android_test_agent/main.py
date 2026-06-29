@@ -20,6 +20,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--resume-from-checkpoint", help="Path to a JSON checkpoint to resume from.")
     parser.add_argument("--review-intent-dsl", action="store_true", help="Pause for approval after intent DSL generation.")
     parser.add_argument("--llm-codegen", action="store_true", help="Use LLM-based pytest code generation.")
+    parser.add_argument("--reinstall-app", action="store_true", help="Install the APK before running generated tests.")
     return parser.parse_args()
 
 
@@ -36,6 +37,8 @@ def main() -> None:
         config.review_intent_dsl = True
     if args.llm_codegen:
         config.llm_codegen_enabled = True
+    if args.reinstall_app:
+        config.reinstall_app = True
 
     agent = AndroidTestAgent(config)
     try:

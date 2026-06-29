@@ -30,6 +30,7 @@ class AndroidTestConfig:
     app_package: str | None = None
     app_activity: str | None = None
     apk_path: str | None = None
+    reinstall_app: bool = False
     implicit_wait_seconds: int = 3
     explicit_wait_seconds: int = 15
 
@@ -62,6 +63,8 @@ class AndroidTestConfig:
             app_package=os.getenv("ANDROID_APP_PACKAGE"),
             app_activity=os.getenv("ANDROID_APP_ACTIVITY"),
             apk_path=os.getenv("ANDROID_APK_PATH"),
+            reinstall_app=os.getenv("ANDROID_REINSTALL_APP", "false").lower()
+            in {"1", "true", "yes"},
             implicit_wait_seconds=int(os.getenv("ATA_IMPLICIT_WAIT_SECONDS", "3")),
             explicit_wait_seconds=int(os.getenv("ATA_EXPLICIT_WAIT_SECONDS", "15")),
             execute_generated_tests=os.getenv("ATA_EXECUTE_GENERATED_TESTS", "false").lower()

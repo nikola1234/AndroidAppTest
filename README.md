@@ -283,8 +283,8 @@ adb devices
 
 你有两种方式：
 
-1. 手动把 `ApiDemos-debug.apk` 安装到手机上
-2. 在 `config/demo_example.yaml` 里给 `app_path` 配置本地 APK 绝对路径，让 Appium 启动时自动安装
+1. 默认手动把 `ApiDemos-debug.apk` 安装到手机上，测试只通过 `appPackage/appActivity` 启动已安装 App
+2. 如需让 Appium 启动前安装 APK，设置 `ANDROID_REINSTALL_APP=true`，并把 `ANDROID_APK_PATH` 指向本地 APK 或 `Apps` 目录
 
 如果你已经有自己的业务 App，也可以直接把 `app_package`、`app_activity`、`app_path` 改成自己的。
 
@@ -316,7 +316,8 @@ android:
 说明：
 
 - `udid` 留空时，如果你只连了一台设备，Appium 一般可以自动选中
-- `app_path` 为空时，表示启动已安装 App
+- `ANDROID_REINSTALL_APP=false` 时，表示启动已安装 App，不向 Appium 传 `app`
+- `ANDROID_REINSTALL_APP=true` 时，才使用 `ANDROID_APK_PATH` 安装 APK
 - `auto_grant_permissions: true` 对第一次安装测试 App 很有帮助
 - `dont_stop_app_on_reset: true` 对一些小米机型更稳一些
 

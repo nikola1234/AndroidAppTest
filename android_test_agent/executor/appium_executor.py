@@ -4,6 +4,7 @@ import json
 from datetime import datetime
 from typing import Any
 
+from android_test_agent.agent.capabilities import build_android_capabilities
 from android_test_agent.agent.config import AndroidTestConfig
 from android_test_agent.dsl.locator_resolver import LocatorResolutionError, LocatorResolver
 
@@ -35,8 +36,7 @@ class AppiumExecutor:
 
         action = step["action"]
         if action == "launch_app":
-            if self._config.app_package:
-                self._driver.activate_app(self._config.app_package)
+            self._launch_app()
             return
         if action == "tap":
             self._wait_for(step["target"], action).click()
@@ -53,7 +53,7 @@ class AppiumExecutor:
             assert self._wait_for(step["target"], action).is_displayed()
             return
         if action == "assert_text":
-            assert step["text"] in self._driver.page_source
+            self._wait_for_text(str(step["text"]))
             return
         if action == "back":
             self._driver.back()
@@ -80,9 +80,13 @@ class AppiumExecutor:
         for candidate_target in self._candidate_targets(resolved_target):
             by, value = self._resolve_locator(candidate_target)
             try:
-                element = WebDriverWait(self._driver, self._config.explicit_wait_seconds).until(
-                    lambda driver: self._find_matching_element(driver, by, value, candidate_target, action)
-                )
+                self._driver.implicitly_wait(0)
+                try:
+                    element = WebDriverWait(self._driver, self._config.explicit_wait_seconds).until(
+                        lambda driver: self._find_matching_element(driver, by, value, candidate_target, action)
+                    )
+                finally:
+                    self._driver.implicitly_wait(self._config.implicit_wait_seconds)
             except Exception as exc:
                 last_error = exc
                 attempts.append(
@@ -118,8 +122,33 @@ class AppiumExecutor:
             "text": By.XPATH,
         }
         if by == "text":
-            value = f"//*[@text='{value}']"
-        return mapping.get(by, By.ID), value
+            value = f"//*[@text={self._xpath_literal(value)}]"
+        if by not in mapping:
+            raise ValueError(f"Unsupported locator strategy: {by}")
+        return mapping[by], value
+
+    def _wait_for_text(self, text: str):
+        from selenium.webdriver.common.by import By
+        from selenium.webdriver.support.ui import WebDriverWait
+
+        if not self._driver:
+            raise RuntimeError("Appium driver has not started")
+        try:
+            self._driver.implicitly_wait(0)
+            try:
+                return WebDriverWait(self._driver, self._config.explicit_wait_seconds).until(
+                    lambda driver: self._find_visible_text(driver, By.XPATH, self._text_xpath(text))
+                )
+            finally:
+                self._driver.implicitly_wait(self._config.implicit_wait_seconds)
+        except Exception as exc:
+            self._write_locator_failure_artifacts("assert_text", {"text": text}, exc)
+            raise
+
+    def _find_visible_text(self, driver: Any, by: str, value: str):
+        elements = driver.find_elements(by, value)
+        visible_elements = [element for element in elements if self._safe_is_displayed(element)]
+        return visible_elements[0] if visible_elements else False
 
     def _find_matching_element(self, driver: Any, by: str, value: str, target: dict[str, Any], action: str):
         elements = driver.find_elements(by, value)
@@ -195,6 +224,18 @@ class AppiumExecutor:
     def _normalized(self, value: Any) -> str:
         return str(value or "").strip().lower()
 
+    def _text_xpath(self, text: str) -> str:
+        literal = self._xpath_literal(text)
+        return f"//*[@text={literal} or @content-desc={literal}]"
+
+    def _xpath_literal(self, value: Any) -> str:
+        value = str(value)
+        if "'" not in value:
+            return "'" + value + "'"
+        if '"' not in value:
+            return '"' + value + '"'
+        return "concat(" + ', "\'", '.join("'" + part + "'" for part in value.split("'")) + ")"
+
     def _candidate_targets(self, resolved_target: dict[str, Any]) -> list[dict[str, Any]]:
         candidates: list[dict[str, Any]] = []
         seen: set[tuple[str, str]] = set()
@@ -249,16 +290,25 @@ class AppiumExecutor:
         except Exception:
             pass
 
+    def _launch_app(self) -> None:
+        if not self._driver:
+            raise RuntimeError("Appium driver has not started")
+        capabilities = self._capabilities()
+        app_package = capabilities.get("appium:appPackage")
+        app_activity = capabilities.get("appium:appActivity")
+        if not app_package:
+            return
+        if app_activity:
+            component = app_activity if "/" in app_activity else f"{app_package}/{app_activity}"
+            try:
+                self._driver.execute_script(
+                    "mobile: startActivity",
+                    {"component": component, "stopApp": True},
+                )
+                return
+            except Exception:
+                pass
+        self._driver.activate_app(app_package)
+
     def _capabilities(self) -> dict[str, Any]:
-        capabilities: dict[str, Any] = {
-            "platformName": self._config.platform_name,
-            "appium:automationName": "UiAutomator2",
-            "appium:deviceName": self._config.device_name,
-        }
-        if self._config.app_package:
-            capabilities["appium:appPackage"] = self._config.app_package
-        if self._config.app_activity:
-            capabilities["appium:appActivity"] = self._config.app_activity
-        if self._config.apk_path:
-            capabilities["appium:app"] = self._config.apk_path
-        return capabilities
+        return build_android_capabilities(self._config, absolutize_app=True)
