@@ -1,0 +1,22 @@
+测试用例 06：Views - Date Widgets 日期时间页面可打开
+
+App 信息：
+- App 名称：ApiDemos
+- appPackage：io.appium.android.apis
+- appActivity：io.appium.android.apis.ApiDemos
+
+测试目标：
+验证 Date Widgets 示例页面可以从 Views 中正常进入，并展示日期或时间相关入口。
+
+前置条件：
+1. ApiDemos 已正常启动。
+2. 当前可以进入 Views。
+
+测试步骤意图：
+进入 Views，打开 Date Widgets；等待页面加载完成，查看是否存在 Dialog、Inline、date、time 或类似日期时间相关示例入口。
+
+期望结果：
+Date Widgets 页面成功展示，并且包含日期或时间相关的示例入口。
+
+补充说明：
+该用例优先验证页面导航和内容可见性，不强制修改系统日期或时间。

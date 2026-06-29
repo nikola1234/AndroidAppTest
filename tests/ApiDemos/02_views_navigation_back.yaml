@@ -1,0 +1,22 @@
+测试用例 02：进入 Views 分类并返回首页
+
+App 信息：
+- App 名称：ApiDemos
+- appPackage：io.appium.android.apis
+- appActivity：io.appium.android.apis.ApiDemos
+
+测试目标：
+验证用户可以从首页进入 Views 分类，并通过系统返回键回到首页。
+
+前置条件：
+1. ApiDemos 已正常启动。
+2. 当前位于 ApiDemos 首页。
+
+测试步骤意图：
+点击首页中的 Views 分类，等待 Views 示例列表出现；确认列表中存在 Controls、Date Widgets、Expandable Lists、Lists 或类似 Views 子功能；然后点击系统返回键回到首页。
+
+期望结果：
+进入 Views 页面后能看到 Views 相关子功能列表；返回后重新看到 ApiDemos 首页分类。
+
+补充说明：
+该用例覆盖页面跳转和返回导航，不需要人工提供 Views 或子菜单的具体 locator。

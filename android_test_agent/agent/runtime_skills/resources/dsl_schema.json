@@ -1,0 +1,20 @@
+{
+  "top_level_required": ["name", "steps"],
+  "top_level_optional": ["description"],
+  "target_actions": ["tap", "input", "wait_visible", "assert_visible"],
+  "intent_target_shape": {
+    "required": ["name", "intent"],
+    "forbidden_at_intent_stage": ["locator", "by", "value", "id", "text"]
+  },
+  "executable_target_shape": {
+    "required": ["name", "locator"],
+    "locator_required": ["by", "value"],
+    "locator_by_values": ["id", "android_uiautomator", "accessibility_id", "text", "xpath"]
+  },
+  "step_examples": [
+    {"action": "launch_app"},
+    {"action": "tap", "target": {"name": "login_button", "intent": "登录按钮"}},
+    {"action": "input", "target": {"name": "username_field", "intent": "账号输入框"}, "value": "test_user"},
+    {"action": "assert_text", "text": "首页"}
+  ]
+}

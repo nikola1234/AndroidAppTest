@@ -1,0 +1,36 @@
+# Optional example element mappings for LocatorResolver.
+# Copy this file to config/elements.yaml and update locator values for your real Android app.
+elements:
+  - name: username_field
+    aliases:
+      - 账号输入框
+      - 用户名输入框
+      - username
+    locator:
+      by: id
+      value: com.example:id/username
+
+  - name: password_field
+    aliases:
+      - 密码输入框
+      - password
+    locator:
+      by: id
+      value: com.example:id/password
+
+  - name: login_button
+    aliases:
+      - 登录按钮
+      - login
+    locator:
+      by: android_uiautomator
+      value: new UiSelector().resourceId("com.example:id/login").text("登录")
+
+  - name: home_page_title
+    aliases:
+      - 首页标题
+      - 首页
+      - home
+    locator:
+      by: text
+      value: 首页

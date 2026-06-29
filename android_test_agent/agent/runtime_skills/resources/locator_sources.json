@@ -1,0 +1,69 @@
+{
+  "sources": {
+    "manual_mapping": {
+      "priority": 1,
+      "description": "Human-maintained mapping from config/elements.yaml.",
+      "trust": "highest"
+    },
+    "element_memory": {
+      "priority": 2,
+      "description": "Historical successful locator from knowledge/elements/element_memory.json.",
+      "trust": "high"
+    },
+    "ui_hierarchy": {
+      "priority": 3,
+      "description": "Candidate parsed from current Android UI hierarchy XML or Appium page source.",
+      "trust": "medium"
+    },
+    "provided": {
+      "priority": 0,
+      "description": "Locator already present in trusted input or resolved state.",
+      "trust": "context-dependent"
+    }
+  },
+  "selection_strategy": {
+    "primary_dimensions": [
+      "source_trust",
+      "current_page_uniqueness",
+      "match_strength",
+      "selector_specificity",
+      "action_fit"
+    ],
+    "tie_breakers": [
+      "avoid volatile absolute XPath",
+      "prefer selectors based on stable native Android attributes",
+      "prefer previously verified locators when current page evidence is similar"
+    ]
+  },
+  "scoring_dimensions": {
+    "source_trust": {
+      "provided": "accepted when it comes from trusted resolved state",
+      "manual_mapping": "highest human-maintained confidence",
+      "element_memory": "high confidence if previously successful on a similar page",
+      "ui_hierarchy": "current screen evidence, must be checked for uniqueness"
+    },
+    "current_page_uniqueness": {
+      "unique_match": "strong bonus when the locator matches exactly one current UI node",
+      "duplicate_match": "penalty when id/text/content-desc appears on multiple current UI nodes",
+      "unknown": "do not assume uniqueness without current page evidence"
+    },
+    "selector_specificity": {
+      "combined_android_uiautomator": "strong when UiSelector combines stable attributes such as resourceId + text/description",
+      "single_attribute": "acceptable only if the attribute is unique or from a trusted source",
+      "xpath": "fallback unless it targets stable attributes instead of hierarchy position"
+    }
+  },
+  "supported_locator_types": {
+    "id": "Appium/Selenium resource id locator. Prefer when unique on the current page or trusted by manual mapping/memory.",
+    "android_uiautomator": "Android UiSelector expression. Prefer when it combines stable native Android attributes, especially when a plain id is duplicated.",
+    "accessibility_id": "Appium accessibility id locator, usually content-desc.",
+    "text": "Project shorthand converted to XPath text equality at execution time.",
+    "xpath": "XPath locator, should be used as a fallback because hierarchy paths can be brittle."
+  },
+  "action_preferences": {
+    "tap": ["clickable", "button-like class", "matching text or content-desc"],
+    "input": ["editable text field", "resource id/name match"],
+    "wait_visible": ["stable screen marker", "title text"],
+    "assert_visible": ["expected result text", "stable title element"]
+  }
+}

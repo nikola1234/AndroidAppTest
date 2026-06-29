@@ -1,0 +1,22 @@
+测试用例 07：Views - Date Widgets - Dialog 修改日期或时间
+
+App 信息：
+- App 名称：ApiDemos
+- appPackage：io.appium.android.apis
+- appActivity：io.appium.android.apis.ApiDemos
+
+测试目标：
+验证日期时间弹窗可以打开，并可以通过确认按钮关闭。
+
+前置条件：
+1. ApiDemos 已正常启动。
+2. 当前可以进入 Views -> Date Widgets。
+
+测试步骤意图：
+进入 Views，打开 Date Widgets，再打开 Dialog 示例；点击页面中的日期或时间设置入口；等待系统日期或时间选择弹窗出现；选择或保持一个日期时间值；点击 OK 或确认按钮。
+
+期望结果：
+日期或时间选择弹窗可以正常打开；点击确认后弹窗关闭；页面回到 Date Widgets Dialog 示例。
+
+补充说明：
+不同 Android 版本的日期时间选择器 UI 可能不同，Agent 应根据当前页面结构选择确认按钮或可见文本。

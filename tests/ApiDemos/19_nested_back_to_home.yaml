@@ -1,0 +1,22 @@
+测试用例 19：多级页面连续返回到首页
+
+App 信息：
+- App 名称：ApiDemos
+- appPackage：io.appium.android.apis
+- appActivity：io.appium.android.apis.ApiDemos
+
+测试目标：
+验证从多级页面连续点击返回键可以稳定回到 ApiDemos 首页。
+
+前置条件：
+1. ApiDemos 已正常启动。
+2. 当前位于首页。
+
+测试步骤意图：
+进入 Views，再进入 Controls，再进入 1. Light Theme；连续点击系统返回键，直到回到 ApiDemos 首页。
+
+期望结果：
+每次返回都进入上一层页面；最终回到 ApiDemos 首页，并能看到首页分类入口。
+
+补充说明：
+该用例覆盖 Android 返回栈和多级导航恢复。

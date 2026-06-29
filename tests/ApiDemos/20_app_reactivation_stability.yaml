@@ -1,0 +1,22 @@
+测试用例 20：横竖屏或重启后的页面稳定性
+
+App 信息：
+- App 名称：ApiDemos
+- appPackage：io.appium.android.apis
+- appActivity：io.appium.android.apis.ApiDemos
+
+测试目标：
+验证 ApiDemos 在重新启动或页面恢复后仍能正常展示首页。
+
+前置条件：
+1. ApiDemos 已安装并可以正常启动。
+2. 设备处于可操作状态。
+
+测试步骤意图：
+打开 ApiDemos，进入任意一个分类页面；返回首页；关闭或重新激活 App；再次等待首页或当前页面恢复。
+
+期望结果：
+App 重新激活后没有崩溃；可以看到 ApiDemos 首页或可恢复的当前页面；基础导航仍然可用。
+
+补充说明：
+如果测试环境不支持屏幕旋转或重启 App，Agent 可以将该用例简化为 activate app 后验证页面恢复。

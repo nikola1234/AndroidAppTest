@@ -1,0 +1,22 @@
+测试用例 09：Views - Expandable Lists 展开和收起分组
+
+App 信息：
+- App 名称：ApiDemos
+- appPackage：io.appium.android.apis
+- appActivity：io.appium.android.apis.ApiDemos
+
+测试目标：
+验证 Expandable Lists 示例可以展开分组并显示子项。
+
+前置条件：
+1. ApiDemos 已正常启动。
+2. 当前可以进入 Views。
+
+测试步骤意图：
+进入 Views，打开 Expandable Lists；选择一个可展开分组；点击该分组展开；观察是否出现子项；再次点击分组或返回。
+
+期望结果：
+分组可以展开；展开后可以看到子项内容；页面没有异常崩溃。
+
+补充说明：
+如果当前 Android 版本或 ApiDemos 版本的菜单名称略有差异，Agent 应通过页面文本相似度和 UI hierarchy 自动选择对应入口。

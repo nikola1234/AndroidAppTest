@@ -1,0 +1,22 @@
+测试用例 14：Graphics 分类基础页面可打开
+
+App 信息：
+- App 名称：ApiDemos
+- appPackage：io.appium.android.apis
+- appActivity：io.appium.android.apis.ApiDemos
+
+测试目标：
+验证 Graphics 分类可以打开，并展示图形绘制相关示例。
+
+前置条件：
+1. ApiDemos 已正常启动。
+2. 当前位于首页。
+
+测试步骤意图：
+点击首页中的 Graphics 分类；等待 Graphics 示例列表出现；选择一个基础图形示例打开，例如 Arcs、Bitmap、ColorFilters、Path 或类似入口。
+
+期望结果：
+Graphics 页面成功打开；图形示例页面成功展示；App 没有崩溃或白屏。
+
+补充说明：
+图形页面主要验证页面可达性和稳定性，不做复杂图像识别。

@@ -1,0 +1,22 @@
+测试用例 12：Preference 偏好设置页面开关项操作
+
+App 信息：
+- App 名称：ApiDemos
+- appPackage：io.appium.android.apis
+- appActivity：io.appium.android.apis.ApiDemos
+
+测试目标：
+验证 Preference 示例页面可以打开，并能操作至少一个偏好设置项。
+
+前置条件：
+1. ApiDemos 已正常启动。
+2. 当前位于首页。
+
+测试步骤意图：
+从首页进入 Preference；打开一个 Preference 示例页面；找到一个可点击或可勾选的设置项；点击该设置项；观察设置项状态或页面反馈。
+
+期望结果：
+Preference 页面打开成功；设置项可以被点击或切换；页面保持稳定。
+
+补充说明：
+Preference 页面在不同版本中具体示例名称可能不同，Agent 应优先选择当前页面可见且可点击的设置项。

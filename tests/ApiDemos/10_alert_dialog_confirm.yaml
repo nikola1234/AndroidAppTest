@@ -1,0 +1,22 @@
+测试用例 10：App - Alert Dialogs 基础弹窗确认
+
+App 信息：
+- App 名称：ApiDemos
+- appPackage：io.appium.android.apis
+- appActivity：io.appium.android.apis.ApiDemos
+
+测试目标：
+验证 App 分类中的 Alert Dialogs 示例可以打开普通弹窗，并通过确认按钮关闭。
+
+前置条件：
+1. ApiDemos 已正常启动。
+2. 当前位于首页。
+
+测试步骤意图：
+从首页进入 App，打开 Alert Dialogs；点击一个用于显示普通 Alert Dialog 的按钮；等待弹窗出现；点击 OK、确认或类似按钮关闭弹窗。
+
+期望结果：
+弹窗成功显示；弹窗中有标题、消息或按钮；点击确认后弹窗关闭并回到 Alert Dialogs 页面。
+
+补充说明：
+该用例覆盖系统弹窗、按钮定位和弹窗关闭流程。

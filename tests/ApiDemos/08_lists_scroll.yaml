@@ -1,0 +1,22 @@
+测试用例 08：Views - Lists 列表页面滚动和条目可见性
+
+App 信息：
+- App 名称：ApiDemos
+- appPackage：io.appium.android.apis
+- appActivity：io.appium.android.apis.ApiDemos
+
+测试目标：
+验证 Views 中的列表类示例可以打开，并且列表支持滚动查看条目。
+
+前置条件：
+1. ApiDemos 已正常启动。
+2. 当前可以进入 Views。
+
+测试步骤意图：
+进入 Views，打开 Lists 或类似列表示例；等待列表条目出现；向下滚动列表；确认滚动后仍能看到新的列表项。
+
+期望结果：
+列表页面打开成功；滚动操作后页面内容发生变化，并且新的列表条目可见。
+
+补充说明：
+该用例用于覆盖 scrollable 列表和滚动场景，Agent 可以使用 android_uiautomator 的滚动能力或 Appium 滑动能力。

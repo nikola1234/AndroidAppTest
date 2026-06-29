@@ -1,0 +1,22 @@
+测试用例 18：Content 分类基础页面可打开
+
+App 信息：
+- App 名称：ApiDemos
+- appPackage：io.appium.android.apis
+- appActivity：io.appium.android.apis.ApiDemos
+
+测试目标：
+验证 Content 分类可以打开，并展示内容相关示例入口。
+
+前置条件：
+1. ApiDemos 已正常启动。
+2. 当前位于首页。
+
+测试步骤意图：
+点击首页中的 Content 分类；等待 Content 示例列表出现；选择一个基础内容示例打开；观察页面是否成功进入。
+
+期望结果：
+Content 分类打开成功；基础示例页面可见；页面没有崩溃。
+
+补充说明：
+该用例主要覆盖 ApiDemos 首页主要分类之一，避免只测试 Views。

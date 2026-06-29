@@ -1,0 +1,46 @@
+{
+  "actions": {
+    "launch_app": {
+      "description": "Activate or start the configured Android app.",
+      "requires_target": false,
+      "requires_value": false,
+      "requires_text": false
+    },
+    "tap": {
+      "description": "Tap a visible UI element.",
+      "requires_target": true,
+      "requires_value": false,
+      "requires_text": false
+    },
+    "input": {
+      "description": "Clear and type into a visible editable UI element.",
+      "requires_target": true,
+      "requires_value": true,
+      "requires_text": false
+    },
+    "wait_visible": {
+      "description": "Wait until a UI element is visible.",
+      "requires_target": true,
+      "requires_value": false,
+      "requires_text": false
+    },
+    "assert_visible": {
+      "description": "Assert that a UI element is visible.",
+      "requires_target": true,
+      "requires_value": false,
+      "requires_text": false
+    },
+    "assert_text": {
+      "description": "Assert that text is present in the current page source.",
+      "requires_target": false,
+      "requires_value": false,
+      "requires_text": true
+    },
+    "back": {
+      "description": "Navigate back.",
+      "requires_target": false,
+      "requires_value": false,
+      "requires_text": false
+    }
+  }
+}

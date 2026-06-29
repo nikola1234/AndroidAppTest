@@ -1,0 +1,23 @@
+测试用例 01：App 启动并展示首页分类
+
+App 信息：
+- App 名称：ApiDemos
+- appPackage：io.appium.android.apis
+- appActivity：io.appium.android.apis.ApiDemos
+
+测试目标：
+验证 ApiDemos 可以正常启动，并在首页展示主要功能分类。
+
+前置条件：
+1. ApiDemos 已安装在测试设备上。
+2. Appium Server 已启动。
+3. 设备已解锁，且没有系统弹窗遮挡应用。
+
+测试步骤意图：
+打开 ApiDemos，等待首页加载完成，观察首页是否展示多个示例分类入口。
+
+期望结果：
+ApiDemos 首页成功展示，并且可以看到类似 Accessibility、Animation、App、Content、Graphics、Media、OS、Preference、Text、Views 等分类入口。
+
+补充说明：
+该用例用于验证最基础的启动能力和首页可见性。Agent 应根据当前页面结构自动选择稳定的页面标题或分类文本作为断言，不需要人工编写 locator。

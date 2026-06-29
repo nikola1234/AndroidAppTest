@@ -1,0 +1,65 @@
+from __future__ import annotations
+
+from typing import Any
+
+import yaml
+
+from android_test_agent.agent.runtime_skills import RuntimeSkillLoader
+from android_test_agent.agent.state import AgentState
+from android_test_agent.llm.base import LLMClient
+
+
+class AnalyzerNode:
+    """Turn a raw test case into normalized requirements."""
+
+    def __init__(self, llm: LLMClient | None = None) -> None:
+        self._llm = llm
+        self._skills = RuntimeSkillLoader()
+
+    def __call__(self, state: AgentState) -> AgentState:
+        raw_case = state["raw_case"]
+        analyzed = self._from_yaml(raw_case) or self._from_llm(raw_case) or self._fallback(raw_case)
+        return {**state, "analyzed_requirements": analyzed}
+
+    def _from_yaml(self, raw_case: str) -> dict[str, Any] | None:
+        try:
+            data = yaml.safe_load(raw_case)
+        except yaml.YAMLError:
+            return None
+        if isinstance(data, dict) and data.get("name"):
+            return {
+                "name": data["name"],
+                "description": data.get("description", raw_case),
+                "preconditions": data.get("preconditions", []),
+                "expected_result": data.get("expected_result"),
+                "steps": data.get("steps"),
+            }
+        return None
+
+    def _from_llm(self, raw_case: str) -> dict[str, Any] | None:
+        if not self._llm:
+            return None
+        system_prompt = self._skills.compose(
+            "requirements",
+            task_prompt=(
+                "You extract Android app testing requirements. "
+                "Return strict JSON with fields: name, description, preconditions, expected_result."
+            ),
+        )
+        user_prompt = f"Test case:\n{raw_case}"
+        try:
+            result = self._llm.complete_json(system_prompt, user_prompt)
+        except Exception:
+            return None
+        if isinstance(result, dict) and result.get("name"):
+            return result
+        return None
+
+    def _fallback(self, raw_case: str) -> dict[str, Any]:
+        title = raw_case.strip().splitlines()[0][:60] if raw_case.strip() else "generated_android_test"
+        return {
+            "name": title,
+            "description": raw_case,
+            "preconditions": [],
+            "expected_result": "Test finishes without functional errors.",
+        }
