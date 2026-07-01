@@ -28,6 +28,7 @@ class AgentGraph:
         executor: Node,
         validator: Node,
         failure_artifacts: Node,
+        failure_knowledge: Node,
         retrier: Node,
         wait_strategy: Node,
         debug: Node,
@@ -43,6 +44,7 @@ class AgentGraph:
         self._executor = executor
         self._validator = validator
         self._failure_artifacts = failure_artifacts
+        self._failure_knowledge = failure_knowledge
         self._retrier = retrier
         self._wait_strategy = wait_strategy
         self._debug = debug
@@ -139,6 +141,7 @@ class AgentGraph:
         graph.add_node("executor", self._checkpointed("executor", self._executor))
         graph.add_node("validator", self._checkpointed("validator", self._validator))
         graph.add_node("failure_artifacts", self._checkpointed("failure_artifacts", self._failure_artifacts))
+        graph.add_node("failure_knowledge", self._checkpointed("failure_knowledge", self._failure_knowledge))
         graph.add_node("retrier", self._checkpointed("retrier", self._retrier))
         graph.add_node("wait_strategy", self._checkpointed("wait_strategy", self._wait_strategy))
         graph.add_node("debug", self._checkpointed("debug", self._debug))
@@ -155,6 +158,7 @@ class AgentGraph:
                 "executor": "executor",
                 "validator": "validator",
                 "failure_artifacts": "failure_artifacts",
+                "failure_knowledge": "failure_knowledge",
                 "retrier": "retrier",
                 "wait_strategy": "wait_strategy",
                 "debug": "debug",
@@ -169,8 +173,9 @@ class AgentGraph:
         graph.add_edge("codegen", "executor")
         graph.add_edge("executor", "validator")
         graph.add_edge("validator", "failure_artifacts")
+        graph.add_edge("failure_artifacts", "failure_knowledge")
         graph.add_conditional_edges(
-            "failure_artifacts",
+            "failure_knowledge",
             self._route_after_validation,
             {
                 "locator": "retrier",
@@ -267,11 +272,12 @@ class AgentGraph:
             "codegen": "executor",
             "executor": "validator",
             "validator": "failure_artifacts",
+            "failure_artifacts": "failure_knowledge",
             "retrier": "dsl",
             "wait_strategy": "element",
             "debug": "planner",
         }
-        if node_name == "failure_artifacts":
+        if node_name == "failure_knowledge":
             return self._next_node_after_failure_artifacts(state)
         return mapping.get(node_name, "analyzer")
 

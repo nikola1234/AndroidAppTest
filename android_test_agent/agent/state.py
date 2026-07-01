@@ -16,6 +16,12 @@ class ValidationResult(TypedDict, total=False):
     passed: bool
     reason: str
     failure_type: str | None
+    exception_class: str
+    error_signature: str
+    stack_summary: list[str]
+    failing_action: str
+    failing_target: str
+    fingerprint: str
     suggestions: list[str]
 
 

@@ -17,6 +17,30 @@ class JsonVectorStore:
         items.append(item)
         self._path.write_text(json.dumps(items, ensure_ascii=False, indent=2), encoding="utf-8")
 
+    def upsert(self, key: str, item: dict[str, Any]) -> dict[str, Any]:
+        items = self._load()
+        item_key = item.get(key)
+        if item_key is None:
+            self.add(item)
+            return item
+
+        for index, existing in enumerate(items):
+            if existing.get(key) == item_key:
+                merged = {**existing, **item}
+                items[index] = merged
+                self._path.write_text(json.dumps(items, ensure_ascii=False, indent=2), encoding="utf-8")
+                return merged
+
+        items.append(item)
+        self._path.write_text(json.dumps(items, ensure_ascii=False, indent=2), encoding="utf-8")
+        return item
+
+    def find_one(self, key: str, value: Any) -> dict[str, Any] | None:
+        for item in self._load():
+            if item.get(key) == value:
+                return item
+        return None
+
     def search(self, query: str, limit: int = 5) -> list[dict[str, Any]]:
         query_tokens = set(query.lower().split())
         scored = []
