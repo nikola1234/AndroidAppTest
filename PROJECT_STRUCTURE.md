@@ -10,7 +10,9 @@
   -> ElementNode 解析页面元素和 locator
   -> CodegenNode 生成 pytest/Appium 代码
   -> Executor 执行或 dry-run
-  -> Validator 判断结果并按失败类型路由
+  -> Validator 判断结果
+  -> FailureArtifacts/FailureKnowledge 留痕和查历史方案
+  -> 按失败类型路由
 ```
 
 核心原则是：LLM 不直接自由生成完整 Appium 脚本，而是先生成结构化 DSL，再由固定的代码生成器产出 pytest/Appium 代码。这样可以减少 LLM 乱写 locator、乱写脚本的问题。
@@ -41,13 +43,19 @@ config/elements_example.yaml -> config/elements.yaml
 
 ### `tests/`
 
-这里不是传统意义上的 pytest 测试目录，而是 Agent 的“输入用例示例”目录。
+这里有两类文件。
 
-目前主要有：
+Agent 输入用例：
 
 - `test_cases_example.yaml`：自然语言测试用例示例。
+- `ApiDemos/*.yaml`：ApiDemos 回归输入用例集，部分用例会在文本里声明 `appPackage` / `appActivity`。
 
-也就是说，这里的文件是给 Agent 读的需求输入，不是最终要执行的自动化测试代码。
+框架单元测试：
+
+- `test_dsl_actions.py`：DSL action、schema 和 codegen 编译测试。
+- `test_failure_knowledge.py`：失败 fingerprint、FailureMemory 和 FailureKnowledgeNode 测试。
+
+注意：Agent 输入 YAML 不是最终要执行的 pytest；最终 pytest 会生成到 `generated/tests/`。
 
 ### `generated/`
 
@@ -57,6 +65,7 @@ Agent 生成产物目录。
 
 - `generated/dsl/`：生成出来的 DSL YAML。
 - `generated/tests/`：生成出来的 pytest/Appium 测试代码。
+- `generated/.generated_cases.json`：源用例和生成文件的登记表。
 
 这些文件是由 Agent 生成的，可以删除后重新生成。
 
@@ -70,7 +79,9 @@ Agent 生成产物目录。
 - `ui_dumps/`：ADB `uiautomator dump` 生成的 XML。
 - `logcat/`：Android logcat。
 - `locator_failures/`：locator 解析或执行失败时保存的 XML、JSON、PNG。
-- `appium_logs/`、`traces/`：预留的执行日志和轨迹目录。
+- `appium_logs/`：Appium server/status/process 日志。
+- `traces/`：失败 trace JSON。
+- `generated_code/`：预留目录，当前主流程不会主动写入。
 
 ### `reports/`
 
@@ -101,6 +112,27 @@ Agent 运行报告和 checkpoint 目录。
 ### `requirements.txt`
 
 Python 依赖列表，包括 Appium、pytest、LangGraph、DeepSeek 客户端相关依赖等。
+
+### `clean_runtime_files.py`
+
+运行时产物清理脚本。
+
+默认清理：
+
+- `generated/`
+- `reports/`
+- `artifacts/`
+- Python cache，例如 `__pycache__` 和 `.pytest_cache`
+
+常用命令：
+
+```bash
+python clean_runtime_files.py --dry-run
+python clean_runtime_files.py
+python clean_runtime_files.py --include-knowledge
+```
+
+默认不会删除 `knowledge/*.json`，只有加 `--include-knowledge` 才会清理本地记忆。
 
 ### `.env`
 
@@ -164,9 +196,12 @@ Agent 编排核心目录。
 - CodegenNode
 - ExecutorNode
 - ValidatorNode
+- FailureArtifactsNode
+- FailureKnowledgeNode
 - RetrierNode
 - WaitStrategyNode
 - DebugNode
+- LlmCodegenNode（开启 LLM codegen 时替代默认 CodegenNode）
 - AgentGraph
 
 你可以把它理解成“把所有零件装成一台机器”的地方。
@@ -187,6 +222,45 @@ Agent 编排核心目录。
 - 是否开启 human review。
 - checkpoint 路径。
 
+常用环境变量：
+
+```env
+ATA_GENERATED_DIR=generated
+ATA_ARTIFACTS_DIR=artifacts
+ATA_REPORTS_DIR=reports
+ATA_KNOWLEDGE_DIR=knowledge
+ATA_CHECKPOINT_DIR=reports/checkpoints
+ATA_CHECKPOINT_DB_PATH=reports/checkpoints/langgraph.sqlite
+ATA_MAX_RETRIES=1
+ATA_EXECUTE_GENERATED_TESTS=false
+ATA_REVIEW_INTENT_DSL=false
+ATA_LLM_CODEGEN_ENABLED=false
+ATA_LLM_TEMPERATURE=0.2
+ATA_LLM_LOG_CALLS=true
+DEEPSEEK_API_KEY=your_key
+DEEPSEEK_MODEL=deepseek-chat
+DEEPSEEK_BASE_URL=https://api.deepseek.com
+ANDROID_PLATFORM_NAME=Android
+ANDROID_DEVICE_NAME=Android Emulator
+ANDROID_APP_PACKAGE=com.example
+ANDROID_APP_ACTIVITY=.MainActivity
+ANDROID_APK_PATH=Apps/app.apk
+ANDROID_REINSTALL_APP=false
+APPIUM_SERVER_URL=http://127.0.0.1:4723
+```
+
+#### `agent/capabilities.py`
+
+Appium capabilities 构建逻辑。
+
+职责：
+
+- 从 `AndroidTestConfig` 读取平台、设备、包名、Activity、APK 路径。
+- 从 DSL 的 `name`、`description`、`app_package`、`app_activity` 中解析 App 信息，允许单条用例覆盖默认包名/Activity。
+- `ANDROID_REINSTALL_APP=true` 时把 `ANDROID_APK_PATH` 写入 `appium:app`，并设置 `appium:enforceAppInstall`。
+- `ANDROID_APK_PATH` 可以是单个 APK，也可以是只包含一个 APK 的目录。
+- 会过滤明显的 placeholder，例如 `your_`、`你的`、`/path/to/`。
+
 #### `agent/graph.py`
 
 LangGraph 流程图。
@@ -204,9 +278,11 @@ analyzer
   -> codegen
   -> executor
   -> validator
+  -> failure_artifacts
+  -> failure_knowledge
 ```
 
-`validator` 后面会根据失败类型分支：
+`failure_knowledge` 后面会根据 `validator` 产出的失败类型分支：
 
 ```text
 locator_not_found -> retrier -> dsl
@@ -236,9 +312,11 @@ environment       -> END
 - `resolved_dsl`：带 locator 的 DSL。
 - `generated_files`：生成文件路径。
 - `execution_result`：执行结果。
-- `validation_result`：校验结果。
+- `validation_result`：校验结果，包含失败类型、异常类、错误签名、失败 action/target、fingerprint 和建议。
+- `element_resolution`：ElementNode 的 locator 解析统计和来源采集结果。
+- `human_review`：人工审核状态。
 - `retry_count`：重试次数。
-- `metadata`：checkpoint、调试信息等。
+- `metadata`：checkpoint、调试信息、`source_case_path`、`codegen_mode`、`last_debug`、`last_repair`、`failure_artifacts`、`failure_knowledge` 等。
 
 #### `agent/checkpoint.py`
 
@@ -358,6 +436,8 @@ assert home page visible
 
 Agent 会在生成 intent DSL 后暂停，让你确认“测什么”是否正确。
 
+如果在非交互环境中运行，无法读取人工输入时会抛出 `HumanReviewRejected`，CLI 会以 exit code `2` 结束。此时可以修改 `reports/reviews/*_intent_dsl.yaml`，再用 `--resume-from-checkpoint` 和 `--approved-intent-dsl` 从 DSL checkpoint 恢复。
+
 #### `element.py`
 
 `ElementNode`。
@@ -422,6 +502,15 @@ ATA_LLM_CODEGEN_ENABLED=true
 
 职责：分析执行结果，判断是否通过，以及失败类型是什么。
 
+失败时还会提取结构化排障信息：
+
+- `exception_class`：异常类，例如 `NoSuchElementException`。
+- `error_signature`：归一化后的错误摘要。
+- `stack_summary`：项目相关堆栈摘要。
+- `failing_action`：失败 action。
+- `failing_target`：失败 target。
+- `fingerprint`：用于失败知识库去重和检索的稳定指纹。
+
 常见失败类型：
 
 - `locator_not_found`
@@ -429,6 +518,32 @@ ATA_LLM_CODEGEN_ENABLED=true
 - `assertion`
 - `environment`
 - `unknown`
+
+#### `failure_artifacts.py`
+
+`FailureArtifactsNode`。
+
+职责：失败后采集设备和 Appium 诊断信息，包括：
+
+- logcat。
+- UI dump。
+- 截图。
+- Appium server 状态。
+- 失败 trace JSON。
+
+#### `failure_knowledge.py`
+
+`FailureKnowledgeNode`。
+
+职责：把失败模式沉淀到本地知识库，并把历史解决方案合并回当前建议。
+
+它会写入：
+
+```text
+knowledge/failures/failure_memory.json
+```
+
+写入内容包括 failure type、异常类、错误签名、失败 action/target、fingerprint、建议修复方案、artifact 路径、出现次数和 verified 状态。后续 retry 成功时，会把对应 fingerprint 标记为 `verified` 并提升 confidence。
 
 #### `retrier.py`
 
@@ -478,6 +593,8 @@ DSL 校验逻辑。
 
 - `validate_intent_dsl()`：校验意图级 DSL。
 - `validate_executable_dsl()`：校验带 locator 的可执行 DSL。
+- `validate_test_dsl()`：兼容旧调用名，当前等同于 intent DSL 校验。
+- `action_target_fields()`：返回某个 action 需要解析 locator 的字段，例如 `drag_and_drop` 会返回 `source` 和 `target`。
 - `normalize_test_name()`：把测试名转成文件名安全格式。
 
 支持的 action 来自：
@@ -485,6 +602,8 @@ DSL 校验逻辑。
 ```text
 android_test_agent/agent/runtime_skills/resources/supported_actions.json
 ```
+
+Planner fallback 和 runtime skills 也会使用这些 action，例如 `scroll_to_text`、扩展手势 action 和断言 action。
 
 #### `locator_resolver.py`
 
@@ -528,6 +647,32 @@ pytest/Appium 代码生成器。
 - 重复 locator 二次筛选。
 - locator 失败 artifacts 保存。
 
+生成的 pytest 不再维护独立的一套 action 分支，而是调用共享的 `AndroidDslActionRuntime`，确保 codegen 路径和直接 DSL 执行路径语义一致。
+
+#### `generated_registry.py`
+
+生成文件登记器。
+
+职责：
+
+- 按原始用例文本计算短 hash，作为 `case_key`。
+- 将每个用例生成的 DSL/pytest 路径写入 `generated/.generated_cases.json`。
+- 同一个源用例再次生成时，先清理旧的生成文件，再写入新文件。
+- `output_name_from_case_path()` 会优先使用 `--case-file` 的文件名作为输出名，避免自然语言标题变化导致文件名不稳定。
+
+#### `action_runtime.py`
+
+DSL action 运行时。
+
+职责：执行 `supported_actions.json` 中定义的 Android DSL action，包括：
+
+- 基础交互：`launch_app`、`tap`、`input`、`clear`、`back`。
+- 等待和断言：`wait_visible`、`assert_visible`、`assert_text`、`assert_checked`、`assert_enabled`、`assert_selected`、`assert_text_equals`、`assert_text_contains`、`wait_gone`、`assert_not_visible`。
+- 手势：`long_press`、`swipe`、`scroll`、`drag_and_drop`、`tap_coordinates`、`pinch`、`zoom`、`w3c_actions`。
+- 设备/App 动作：`press_key`、`hide_keyboard`、`background_app`、`activate_app`、`terminate_app`、`change_orientation`、`accept_permission`、`dismiss_dialog`。
+
+手势优先使用 Appium UiAutomator2 的 `mobile:*Gesture`，复杂多指动作可通过 `w3c_actions` 传入 W3C actions payload。
+
 ### `android_test_agent/executor/`
 
 执行层目录。
@@ -540,6 +685,22 @@ pytest/Appium 代码生成器。
 - `PytestExecutor`：通过子进程执行生成的 pytest 文件。
 
 当前主流程主要使用 `PytestExecutor`。
+
+`PytestExecutor` 会返回 `execution_result`，其中包括 pytest 命令、stdout/stderr、return code、生成测试路径，以及 Appium server 诊断信息。
+
+#### `AppiumServerManager`
+
+定义在 `dsl_executor.py` 中。
+
+职责：
+
+- 执行前访问 `APPIUM_SERVER_URL/status` 检查 Appium 是否可用。
+- 如果不可用，尝试托管启动本机 `appium` 命令。
+- 托管启动时把 Appium 日志和进程输出写入 `artifacts/appium_logs/`。
+- 执行结束后停止由本次流程托管启动的 Appium 进程。
+- 将 `ready`、`managed`、`server_url`、`command`、`log_path`、`process_output_path` 等信息写入 `execution_result.appium_server`。
+
+`FailureArtifactsNode` 会在失败时收集这些 managed Appium 日志路径。
 
 #### `appium_executor.py`
 
@@ -556,6 +717,8 @@ Appium 直接执行封装。
 - 成功后写回元素记忆。
 - 失败后写 artifacts。
 
+该执行器也复用 `AndroidDslActionRuntime`，避免直接执行 DSL 和生成 pytest 的行为分叉。
+
 #### `retry_policy.py`
 
 失败重试策略。
@@ -564,6 +727,15 @@ Appium 直接执行封装。
 
 - 判断某类失败是否值得 retry。
 - timeout 时尝试修复 DSL，例如插入 `wait_visible`。
+
+`should_retry()` 当前允许 retry 的失败类型：
+
+- `locator_not_found`
+- `timeout`
+- `assertion`
+- `unknown`
+
+最大次数来自 `ATA_MAX_RETRIES` / `config.max_retries`，默认是 `1`。`environment` 失败不会改 DSL，通常需要人工检查 Appium、ADB、包名、Activity 或设备状态。
 
 ### `android_test_agent/tools/`
 
@@ -637,10 +809,13 @@ Memory 抽象接口。
 简单 JSON 存储和 token 搜索实现。
 
 名字叫 vector store，但当前并不是真正 embedding 向量检索，更像一个轻量占位实现。
+它支持 append、按字段 upsert、精确查找和简单关键词搜索。
 
 #### `case_memory.py`
 
 历史用例记忆。
+
+当前已经实现 `CaseMemory` 接口和本地 JSON 存储路径约定，但 Agent 主流程还没有自动写入或检索 `knowledge/cases/case_memory.json`。
 
 #### `element_memory.py`
 
@@ -652,11 +827,31 @@ Memory 抽象接口。
 
 失败模式记忆。
 
-当前主要是预留能力。
+当前已经接入主流程，由 `FailureKnowledgeNode` 使用。默认保存到：
+
+```text
+knowledge/failures/failure_memory.json
+```
+
+典型字段：
+
+- `fingerprint`：稳定失败指纹。
+- `failure_type`：失败类型。
+- `exception_class`：异常类。
+- `error_signature`：错误摘要。
+- `failing_action` / `failing_target`：失败动作和目标。
+- `stack_summary`：项目相关堆栈摘要。
+- `suggested_fix`：建议修复方案。
+- `occurrence_count`：相同失败出现次数。
+- `status`：`observed` 或 `verified`。
+- `confidence`：建议可信度。
+- `artifacts`：trace、截图、UI dump、logcat 等路径。
 
 #### `retriever.py`
 
-聚合多个 memory 的检索器。
+`KnowledgeRetriever`。
+
+聚合多个 memory 的检索器。当前作为预留能力存在，主流程还没有直接调用它。
 
 ### `android_test_agent/llm/`
 
@@ -675,6 +870,9 @@ DeepSeek API 客户端。
 ```env
 DEEPSEEK_API_KEY
 DEEPSEEK_MODEL
+DEEPSEEK_BASE_URL
+ATA_LLM_TEMPERATURE
+ATA_LLM_LOG_CALLS
 ```
 
 如果没有配置 Key，部分节点会走 fallback。
@@ -693,6 +891,7 @@ DEEPSEEK_MODEL
 - `planning.md`：Planner 用。
 - `dsl.md`：DslNode 用。
 - `locator.md`：LocatorResolver 用。
+- `codegen.md`：LlmCodegenNode 用。
 - `tools.md`：告诉 LLM 当前有哪些工具和数据来源。
 
 #### `runtime_skills/references/`
@@ -725,6 +924,14 @@ DEEPSEEK_MODEL
 MCP skill 适配预留目录。
 
 目前不是主流程重点。
+
+#### `skills/base.py`
+
+定义 Skill 抽象接口。
+
+#### `skills/mcp_adapter.py`
+
+`MCPAdapter` 可以注册本地 `Tool`，以接近 MCP 的形式列出和调用工具。当前是预留层，主流程没有直接依赖它。
 
 ## 一次运行到底发生了什么
 
@@ -797,6 +1004,8 @@ generated/tests/test_<name>.py
 
 如果加了 `--execute`，会执行生成出来的 pytest/Appium 测试。
 
+执行前 `PytestExecutor` 会检查 `APPIUM_SERVER_URL/status`。如果 Appium 不可用，会尝试托管启动本机 `appium` 命令，并把 `log_path`、`process_output_path`、`managed`、`ready` 等诊断信息写入 `execution_result.appium_server`。
+
 ### 9. Validator 判断结果
 
 `ValidatorNode` 判断测试是否通过。
@@ -809,7 +1018,29 @@ generated/tests/test_<name>.py
 - 环境问题
 - unknown
 
-### 10. 失败路由
+同时会生成稳定 fingerprint，并提取异常类、错误签名、失败 action/target 和项目相关堆栈摘要。
+
+### 10. 失败 artifacts
+
+`FailureArtifactsNode` 会采集失败现场：
+
+- logcat。
+- UI dump。
+- 截图。
+- Appium 状态。
+- trace JSON。
+
+### 11. 失败知识库
+
+`FailureKnowledgeNode` 会查询并更新：
+
+```text
+knowledge/failures/failure_memory.json
+```
+
+如果找到相似历史失败，会把历史 `suggested_fix` 合并进当前 `validation_result.suggestions`。如果后续 retry 成功，会把对应 fingerprint 标记为 `verified`。
+
+### 12. 失败路由
 
 LangGraph 根据失败类型决定下一步：
 
@@ -846,6 +1077,8 @@ android_test_agent/agent/nodes/element.py
 android_test_agent/agent/nodes/codegen.py
 android_test_agent/agent/nodes/executor.py
 android_test_agent/agent/nodes/validator.py
+android_test_agent/agent/nodes/failure_artifacts.py
+android_test_agent/agent/nodes/failure_knowledge.py
 ```
 
 这几个文件对应主流程里的每一步。
@@ -854,6 +1087,7 @@ android_test_agent/agent/nodes/validator.py
 
 ```text
 android_test_agent/dsl/locator_resolver.py
+android_test_agent/dsl/action_runtime.py
 android_test_agent/tools/ui_hierarchy_parser.py
 android_test_agent/executor/appium_executor.py
 android_test_agent/dsl/codegen.py
@@ -873,9 +1107,11 @@ android_test_agent/agent/runtime_resources.py
 
 ## 当前容易混淆的点
 
-### `tests/` 不是最终测试代码目录
+### `tests/` 有两种用途
 
-`tests/test_cases_example.yaml` 是输入用例。
+`tests/test_cases_example.yaml` 和 `tests/ApiDemos/*.yaml` 是 Agent 输入用例。
+
+`tests/test_dsl_actions.py` 和 `tests/test_failure_knowledge.py` 是框架单元测试。
 
 真正生成的 pytest 在：
 
@@ -918,9 +1154,13 @@ target:
 
 它是本项目运行时给 DeepSeek/LLM 看的 prompt 文件。
 
-### README 后半部分可能会误导
+### `--execute` 不强制预先启动 Appium
 
-当前 `README.md` 前半部分是现在的 AI Agent 框架，后半部分还有一段传统 Appium Page Object 骨架说明。当前主框架以 `android_test_agent/` 为准。
+`PytestExecutor` 会先检查 `APPIUM_SERVER_URL/status`。如果不可用，会尝试托管启动本机 `appium` 命令。手动预启动 Appium 仍然可以，但不是必须。
+
+### `artifacts/generated_code/` 当前是预留目录
+
+当前主流程写 `generated/dsl/`、`generated/tests/`、`artifacts/traces/`、`artifacts/locator_failures/` 等目录；`artifacts/generated_code/` 只是预留目录。
 
 ## 当前 locator 设计状态
 
@@ -938,7 +1178,7 @@ target:
 - 成功/失败后的稳定性分数更新。
 - 真正的向量库。
 - OCR/视觉识别。
-- 更完整的 failure memory。
+- 更细粒度的 failure memory 归因和自动修复策略。
 
 ## 一句话总结
 
