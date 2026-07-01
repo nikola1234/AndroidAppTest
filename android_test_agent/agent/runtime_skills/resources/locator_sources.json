@@ -62,8 +62,22 @@
   },
   "action_preferences": {
     "tap": ["clickable", "button-like class", "matching text or content-desc"],
+    "long_press": ["clickable or long-clickable element", "matching text or content-desc"],
     "input": ["editable text field", "resource id/name match"],
+    "clear": ["editable text field", "resource id/name match"],
     "wait_visible": ["stable screen marker", "title text"],
-    "assert_visible": ["expected result text", "stable title element"]
+    "assert_visible": ["expected result text", "stable title element"],
+    "assert_checked": ["checkbox, radio button, switch, or toggle element"],
+    "assert_enabled": ["interactive element with stable id or label"],
+    "assert_selected": ["tab, radio button, list item, or selectable element"],
+    "assert_text_equals": ["text-bearing element with stable id, text, or content-desc"],
+    "assert_text_contains": ["text-bearing element with stable id, text, or content-desc"],
+    "wait_gone": ["stable loading marker, dialog, or transient message"],
+    "assert_not_visible": ["stable absent-state marker, dialog, or error message"],
+    "swipe": ["scrollable container when a target is supplied"],
+    "scroll": ["scrollable container when a target is supplied"],
+    "drag_and_drop": ["draggable source and stable destination target"],
+    "pinch": ["zoomable map, image, or canvas area"],
+    "zoom": ["zoomable map, image, or canvas area"]
   }
 }

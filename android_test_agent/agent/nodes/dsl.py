@@ -5,10 +5,8 @@ from typing import Any
 
 from android_test_agent.agent.runtime_skills import RuntimeSkillLoader
 from android_test_agent.agent.state import AgentState
-from android_test_agent.dsl.schema import validate_intent_dsl
+from android_test_agent.dsl.schema import action_target_fields, validate_intent_dsl
 from android_test_agent.llm.base import LLMClient
-
-TARGET_ACTIONS = {"tap", "input", "wait_visible", "assert_visible"}
 
 
 class DslNode:
@@ -57,16 +55,15 @@ class DslNode:
     def _to_intent_dsl(self, dsl: dict[str, Any]) -> dict[str, Any]:
         updated = deepcopy(dsl)
         for step in updated.get("steps", []):
-            if step.get("action") not in TARGET_ACTIONS:
-                continue
-            target = step.get("target")
-            if isinstance(target, dict):
-                step["target"] = self._clean_target(target)
-            elif isinstance(target, str):
-                step["target"] = {
-                    "name": self._infer_target_name(target),
-                    "intent": target,
-                }
+            for field in action_target_fields(str(step.get("action"))):
+                target = step.get(field)
+                if isinstance(target, dict):
+                    step[field] = self._clean_target(target)
+                elif isinstance(target, str):
+                    step[field] = {
+                        "name": self._infer_target_name(target),
+                        "intent": target,
+                    }
         return updated
 
     def _clean_target(self, target: dict[str, Any]) -> dict[str, Any]:

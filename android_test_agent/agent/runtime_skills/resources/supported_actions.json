@@ -47,6 +47,168 @@
       "requires_target": false,
       "requires_value": false,
       "requires_text": false
+    },
+    "long_press": {
+      "description": "Long-press a visible UI element.",
+      "requires_target": true,
+      "requires_value": false,
+      "requires_text": false,
+      "target_fields": ["target"]
+    },
+    "swipe": {
+      "description": "Swipe by direction within the viewport or a target element, or from start to end coordinates.",
+      "requires_target": false,
+      "requires_value": false,
+      "requires_text": false,
+      "target_fields": ["target"]
+    },
+    "scroll": {
+      "description": "Scroll by direction within the viewport or a target element, or from start to end coordinates.",
+      "requires_target": false,
+      "requires_value": false,
+      "requires_text": false,
+      "target_fields": ["target"]
+    },
+    "drag_and_drop": {
+      "description": "Drag from a source element to a target element, or from start to end coordinates.",
+      "requires_target": false,
+      "requires_value": false,
+      "requires_text": false,
+      "target_fields": ["source", "target"]
+    },
+    "clear": {
+      "description": "Clear a visible editable UI element without typing a new value.",
+      "requires_target": true,
+      "requires_value": false,
+      "requires_text": false,
+      "target_fields": ["target"]
+    },
+    "press_key": {
+      "description": "Press an Android key by common alias or numeric keycode.",
+      "requires_target": false,
+      "requires_value": false,
+      "requires_text": false,
+      "required_fields": ["key"]
+    },
+    "hide_keyboard": {
+      "description": "Hide the soft keyboard if it is open.",
+      "requires_target": false,
+      "requires_value": false,
+      "requires_text": false
+    },
+    "assert_checked": {
+      "description": "Assert that a visible element is checked.",
+      "requires_target": true,
+      "requires_value": false,
+      "requires_text": false,
+      "target_fields": ["target"]
+    },
+    "assert_enabled": {
+      "description": "Assert that a visible element is enabled.",
+      "requires_target": true,
+      "requires_value": false,
+      "requires_text": false,
+      "target_fields": ["target"]
+    },
+    "assert_selected": {
+      "description": "Assert that a visible element is selected.",
+      "requires_target": true,
+      "requires_value": false,
+      "requires_text": false,
+      "target_fields": ["target"]
+    },
+    "assert_text_equals": {
+      "description": "Assert that a visible element's text equals the supplied text.",
+      "requires_target": true,
+      "requires_value": false,
+      "requires_text": true,
+      "target_fields": ["target"]
+    },
+    "assert_text_contains": {
+      "description": "Assert that a visible element's text contains the supplied text.",
+      "requires_target": true,
+      "requires_value": false,
+      "requires_text": true,
+      "target_fields": ["target"]
+    },
+    "wait_gone": {
+      "description": "Wait until a target element is gone or no longer visible.",
+      "requires_target": true,
+      "requires_value": false,
+      "requires_text": false,
+      "target_fields": ["target"]
+    },
+    "assert_not_visible": {
+      "description": "Assert that a target element is absent or not visible.",
+      "requires_target": true,
+      "requires_value": false,
+      "requires_text": false,
+      "target_fields": ["target"]
+    },
+    "tap_coordinates": {
+      "description": "Tap absolute screen coordinates.",
+      "requires_target": false,
+      "requires_value": false,
+      "requires_text": false,
+      "required_fields": ["x", "y"]
+    },
+    "background_app": {
+      "description": "Send the current app to the background.",
+      "requires_target": false,
+      "requires_value": false,
+      "requires_text": false
+    },
+    "activate_app": {
+      "description": "Activate the configured app or a supplied app_package.",
+      "requires_target": false,
+      "requires_value": false,
+      "requires_text": false
+    },
+    "terminate_app": {
+      "description": "Terminate the configured app or a supplied app_package.",
+      "requires_target": false,
+      "requires_value": false,
+      "requires_text": false
+    },
+    "change_orientation": {
+      "description": "Change device orientation to PORTRAIT or LANDSCAPE.",
+      "requires_target": false,
+      "requires_value": false,
+      "requires_text": false,
+      "required_fields": ["orientation"]
+    },
+    "accept_permission": {
+      "description": "Accept the current permission or alert dialog.",
+      "requires_target": false,
+      "requires_value": false,
+      "requires_text": false
+    },
+    "dismiss_dialog": {
+      "description": "Dismiss the current dialog or alert.",
+      "requires_target": false,
+      "requires_value": false,
+      "requires_text": false
+    },
+    "pinch": {
+      "description": "Pinch close on a target element or rectangular area.",
+      "requires_target": false,
+      "requires_value": false,
+      "requires_text": false,
+      "target_fields": ["target"]
+    },
+    "zoom": {
+      "description": "Pinch open or zoom on a target element or rectangular area.",
+      "requires_target": false,
+      "requires_value": false,
+      "requires_text": false,
+      "target_fields": ["target"]
+    },
+    "w3c_actions": {
+      "description": "Run a raw W3C actions payload for advanced or multi-pointer gestures.",
+      "requires_target": false,
+      "requires_value": false,
+      "requires_text": false,
+      "required_fields": ["actions"]
     }
   }
 }

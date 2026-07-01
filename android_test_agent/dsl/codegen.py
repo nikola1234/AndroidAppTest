@@ -53,6 +53,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 
 from android_test_agent.agent.config import AndroidTestConfig
+from android_test_agent.dsl.action_runtime import AndroidDslActionRuntime
 from android_test_agent.dsl.locator_resolver import LocatorResolutionError, LocatorResolver
 
 
@@ -97,6 +98,13 @@ RESOLVER_CONFIG = AndroidTestConfig(
     explicit_wait_seconds=EXPLICIT_WAIT_SECONDS,
 )
 LOCATOR_RESOLVER = LocatorResolver(RESOLVER_CONFIG)
+ACTION_RUNTIME = AndroidDslActionRuntime(
+    RESOLVER_CONFIG,
+    locator_resolver=LOCATOR_RESOLVER,
+    artifacts_dir=ARTIFACTS_DIR,
+    failure_prefix={test_name!r},
+    remember_runtime_locators=REMEMBER_RUNTIME_LOCATORS,
+)
 
 
 @pytest.fixture()
@@ -247,7 +255,8 @@ def xpath_literal(value):
         return "'" + value + "'"
     if '"' not in value:
         return '"' + value + '"'
-    return "concat(" + ', "\\'", '.join("'" + part + "'" for part in value.split("'")) + ")"
+    separator = ', ' + '"' + "'" + '"' + ', '
+    return "concat(" + separator.join("'" + part + "'" for part in value.split("'")) + ")"
 
 
 def uiselector_literal(value):
@@ -367,43 +376,7 @@ def launch_app(driver):
 
 
 def run_step(driver, step):
-    action = step["action"]
-
-    if action == "launch_app":
-        launch_app(driver)
-        return
-
-    if action == "tap":
-        wait_for(driver, step["target"], action).click()
-        return
-
-    if action == "input":
-        element = wait_for(driver, step["target"], action)
-        element.clear()
-        element.send_keys(str(step["value"]))
-        return
-
-    if action == "wait_visible":
-        wait_for(driver, step["target"], action)
-        return
-
-    if action == "assert_visible":
-        assert wait_for(driver, step["target"], action).is_displayed()
-        return
-
-    if action == "assert_text":
-        wait_for_text(driver, str(step["text"]))
-        return
-
-    if action == "scroll_to_text":
-        scroll_to_text(driver, str(step["text"]))
-        return
-
-    if action == "back":
-        driver.back()
-        return
-
-    raise ValueError(f"Unsupported action: {{action}}")
+    ACTION_RUNTIME.run_step(driver, step)
 
 
 def test_{test_name}(driver):

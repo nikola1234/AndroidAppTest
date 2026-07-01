@@ -34,8 +34,15 @@ new UiSelector().className("android.widget.Button").textContains("登录")
 Action-specific hints:
 
 - `tap`: prefer clickable buttons or elements with button-like class/name.
-- `input`: prefer editable text fields.
+- `long_press`: prefer clickable or long-clickable elements with matching label.
+- `input` and `clear`: prefer editable text fields.
 - `wait_visible`: prefer stable screen markers.
 - `assert_visible`: prefer expected result text or stable title elements.
+- `assert_checked` and `assert_selected`: prefer checkbox, radio, switch, tab, or selectable classes.
+- `assert_enabled`: prefer interactive controls with stable id or label.
+- `assert_text_equals` and `assert_text_contains`: prefer text-bearing elements with stable id, text, or content-desc.
+- `wait_gone` and `assert_not_visible`: prefer stable transient markers such as loading indicators, dialogs, or error messages.
+- `swipe`, `scroll`, `pinch`, and `zoom`: only resolve a `target` when the gesture is scoped to a specific container or zoomable area.
+- `drag_and_drop`: resolve both `source` and `target` when the step uses element targets.
 
 Never choose a locator outside the provided candidate list.

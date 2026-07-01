@@ -146,16 +146,16 @@ class UIHierarchyParser:
 
         if element.resource_id:
             score += 0.1
-        if element.clickable and action == "tap":
+        if element.clickable and action in {"tap", "long_press", "drag_and_drop"}:
             score += 0.15
-            reasons.append("clickable tap target")
+            reasons.append("clickable interaction target")
 
         return score, "; ".join(reasons)
 
     def _role_score(self, element: UIElement, action: str | None, query: str) -> tuple[float, str]:
         class_name = element.class_name.lower()
         normalized_query = self._normalized(query)
-        if action == "input" and "edittext" in class_name:
+        if action in {"input", "clear"} and "edittext" in class_name:
             return 0.25, "input-like element"
         if "checkbox" in normalized_query and "checkbox" in class_name:
             return 0.25, "checkbox-like element"
@@ -166,8 +166,12 @@ class UIHierarchyParser:
             and ("togglebutton" in class_name or "switch" in class_name)
         ):
             return 0.25, "toggle-like element"
-        if action == "tap" and "button" in class_name:
+        if action in {"tap", "long_press"} and "button" in class_name:
             return 0.2, "tap-like element"
+        if action in {"assert_checked", "assert_selected"} and (
+            "checkbox" in class_name or "radiobutton" in class_name or "switch" in class_name
+        ):
+            return 0.2, "state assertion element"
         return 0.0, ""
 
     def _locator_candidates(self, element: UIElement) -> list[dict[str, str]]:

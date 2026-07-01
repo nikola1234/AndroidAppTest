@@ -10,13 +10,11 @@ import xml.etree.ElementTree as ET
 from android_test_agent.agent.config import AndroidTestConfig
 from android_test_agent.agent.state import AgentState
 from android_test_agent.dsl.locator_resolver import LocatorResolutionError, LocatorResolver
-from android_test_agent.dsl.schema import validate_intent_dsl
+from android_test_agent.dsl.schema import action_target_fields, validate_intent_dsl
 from android_test_agent.llm.base import LLMClient
 from android_test_agent.tools.adb_tool import ADBTool
 from android_test_agent.tools.screenshot_tool import ScreenshotTool
 from android_test_agent.tools.ui_dump_tool import UIDumpTool
-
-TARGET_ACTIONS = {"tap", "input", "wait_visible", "assert_visible"}
 
 
 class ElementNode:
@@ -187,31 +185,32 @@ class ElementNode:
         }
 
         target_steps = [
-            (index, step)
+            (index, field, step)
             for index, step in enumerate(resolved.get("steps", []), start=1)
-            if step.get("action") in TARGET_ACTIONS and step.get("target")
+            for field in action_target_fields(str(step.get("action")))
+            if step.get(field)
         ]
         if not target_steps:
             return resolved, stats
 
         max_workers = min(4, len(target_steps))
-        results: dict[int, dict[str, Any]] = {}
+        results: dict[tuple[int, str], dict[str, Any]] = {}
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             futures = {
-                executor.submit(self._resolve_step_target, index, step, page_source): index
-                for index, step in target_steps
+                executor.submit(self._resolve_step_target, index, field, step, page_source): (index, field)
+                for index, field, step in target_steps
             }
             for future in as_completed(futures):
-                index = futures[future]
-                results[index] = future.result()
+                key = futures[future]
+                results[key] = future.result()
 
-        for index, step in target_steps:
-            result = results[index]
+        for index, field, step in target_steps:
+            result = results[(index, field)]
             if not result["resolved"]:
                 stats["unresolved_targets"] += 1
                 stats["targets"].append(result["stats"])
                 continue
-            step["target"] = result["target"]
+            step[field] = result["target"]
             stats["resolved_targets"] += 1
             stats["targets"].append(result["stats"])
             if result["target"].get("locator_source") == "ui_hierarchy":
@@ -219,9 +218,15 @@ class ElementNode:
 
         return resolved, stats
 
-    def _resolve_step_target(self, index: int, step: dict[str, Any], page_source: str) -> dict[str, Any]:
+    def _resolve_step_target(
+        self,
+        index: int,
+        field: str,
+        step: dict[str, Any],
+        page_source: str,
+    ) -> dict[str, Any]:
         action = step.get("action")
-        target = step.get("target")
+        target = step.get(field)
         try:
             resolved_target = self._locator_resolver.resolve_target(
                 target,
@@ -234,6 +239,7 @@ class ElementNode:
                 "stats": {
                     "step": index,
                     "action": action,
+                    "field": field,
                     "target": target,
                     "resolved": False,
                     "reason": str(exc),
@@ -246,6 +252,7 @@ class ElementNode:
             "stats": {
                 "step": index,
                 "action": action,
+                "field": field,
                 "target": self._target_name(resolved_target),
                 "resolved": True,
                 "source": resolved_target.get("locator_source"),

@@ -13,6 +13,7 @@ Rules:
 - Preserve locator candidate fallback behavior when `locator_candidates` is present.
 - Save useful failure artifacts when locator resolution or element lookup fails.
 - Support these locator types: `id`, `android_uiautomator`, `accessibility_id`, `text`, `xpath`.
+- Support every action listed in the supplied `supported_actions` resource. Prefer the project `AndroidDslActionRuntime` helper when available so generated code stays consistent with deterministic codegen.
 - Keep generated code deterministic and readable.
 - The code must pass Python `compile()` before it can be executed.
 
