@@ -13,6 +13,8 @@ ATA_EXECUTE_GENERATED_TESTS=true
 
 ##命令
 python -m venv .venv
+
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 .venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 
@@ -43,3 +45,6 @@ generated/tests/test_01_app_launch_home_categories.py::test_01_app_launch_home_c
 
 ===================================================================================== 1 passed in 13.38s ======================================================================================
 (.venv) PS D:\android_test\AndroidAppTest>
+
+$env:ATA_REVIEW_INTENT_DSL="true"
+python main.py  --case-file tests\ApiDemos\02_views_navigation_back.yaml --review-intent-dsl
