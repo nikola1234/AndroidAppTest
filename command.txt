@@ -51,6 +51,19 @@ python main.py  --case-file tests\ApiDemos\02_views_navigation_back.yaml --revie
 
 python main.py --resume-from-checkpoint reports\checkpoints\<thread-id>\003_dsl.json --approved-intent-dsl reports\reviews\xxx_intent_dsl.yaml
 
+(.venv) PS D:\android_test\AndroidAppTest> python -m pytest .\generated\tests\test_02_views_navigation_back.py  -vv -s --tb=short
+===================================================================================== test session starts =====================================================================================
+platform win32 -- Python 3.14.6, pytest-8.4.2, pluggy-1.6.0 -- D:\android_test\AndroidAppTest\.venv\Scripts\python.exe
+cachedir: .pytest_cache
+rootdir: D:\android_test\AndroidAppTest
+plugins: anyio-4.14.1, langsmith-0.9.3
+collected 1 item
+
+generated/tests/test_02_views_navigation_back.py::test_02_views_navigation_back PASSED
+
+===================================================================================== 1 passed in 10.53s ======================================================================================
+(.venv) PS D:\android_test\AndroidAppTest>
+
 ## 自动 Appium 与失败诊断
 
 # 推荐：让 agent 在执行 pytest 前自动检查/启动 Appium，并保存 Appium log。
