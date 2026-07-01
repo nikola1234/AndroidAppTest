@@ -54,7 +54,7 @@ class HumanReviewNode:
         if not sys.stdin.isatty():
             raise HumanReviewRejected(
                 "Intent DSL review is required, but stdin is not interactive. "
-                f"Review {review_path}, then rerun without --review-intent-dsl or resume from the DSL checkpoint."
+                f"Review {review_path}, then resume with:\n{self._resume_command(updated, review_path)}"
             )
 
         print("\nIntent DSL review required. Review file:")
@@ -62,7 +62,10 @@ class HumanReviewNode:
         print(yaml.safe_dump(intent_dsl, allow_unicode=True, sort_keys=False))
         answer = self._input("Approve this intent DSL and continue? [y/N]: ").strip().lower()
         if answer not in {"y", "yes"}:
-            raise HumanReviewRejected(f"Intent DSL rejected. Edit the source case or review {review_path}.")
+            raise HumanReviewRejected(
+                "Intent DSL rejected. Edit the review YAML, then resume with:\n"
+                f"{self._resume_command(updated, review_path)}"
+            )
 
         review = {**review, "approved": True}
         metadata["human_review"] = review
@@ -113,6 +116,34 @@ class HumanReviewNode:
         registry = self._read_registry(output_dir)
         registry[case_key] = {"path": str(path)}
         self._write_registry(output_dir, registry)
+
+    def _resume_command(self, state: AgentState, review_path: str) -> str:
+        checkpoint_path = self._dsl_checkpoint_path(state)
+        if not checkpoint_path:
+            raise HumanReviewRejected(
+                "Intent DSL rejected, but no DSL checkpoint was recorded. "
+                f"Edit {review_path}, then rerun the case to regenerate a checkpoint."
+            )
+        return (
+            f"python main.py --resume-from-checkpoint {self._quote(str(checkpoint_path))} "
+            f"--approved-intent-dsl {self._quote(review_path)}"
+        )
+
+    def _dsl_checkpoint_path(self, state: AgentState) -> str | None:
+        metadata = state.get("metadata", {})
+        last_checkpoint = metadata.get("last_checkpoint")
+        if isinstance(last_checkpoint, str) and last_checkpoint.endswith("_dsl.json"):
+            return last_checkpoint
+
+        checkpoint_files = metadata.get("checkpoint_files", [])
+        if isinstance(checkpoint_files, list):
+            for checkpoint_path in reversed(checkpoint_files):
+                if isinstance(checkpoint_path, str) and checkpoint_path.endswith("_dsl.json"):
+                    return checkpoint_path
+        return None
+
+    def _quote(self, value: str) -> str:
+        return f'"{value.replace(chr(34), "`" + chr(34))}"'
 
     def _read_registry(self, output_dir: Path) -> dict[str, Any]:
         path = output_dir / ".review_cases.json"

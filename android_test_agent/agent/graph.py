@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from copy import deepcopy
 from typing import Any
 from uuid import uuid4
 
@@ -77,12 +78,25 @@ class AgentGraph:
         self,
         checkpoint_path: str,
         thread_id: str | None = None,
+        approved_intent_dsl: dict[str, Any] | None = None,
+        approved_intent_dsl_path: str | None = None,
     ) -> AgentState:
         checkpoint = read_state_checkpoint(checkpoint_path)
         state: AgentState = checkpoint["state"]
+        if approved_intent_dsl is not None:
+            state = self._with_approved_intent_dsl(
+                checkpoint["node"],
+                state,
+                approved_intent_dsl,
+                approved_intent_dsl_path,
+            )
         metadata = dict(state.get("metadata", {}))
         checkpoint_thread_id = thread_id or str(metadata.get("checkpoint_thread_id") or checkpoint["thread_id"])
-        start_at = self._next_node_after_checkpoint(checkpoint["node"], state)
+        start_at = (
+            "element"
+            if approved_intent_dsl is not None
+            else self._next_node_after_checkpoint(checkpoint["node"], state)
+        )
         metadata["checkpoint_thread_id"] = checkpoint_thread_id
         metadata["resumed_from_checkpoint"] = checkpoint["path"]
         metadata["resumed_from_node"] = checkpoint["node"]
@@ -194,6 +208,45 @@ class AgentGraph:
             return {**updated, "metadata": metadata}
 
         return wrapped
+
+    def _with_approved_intent_dsl(
+        self,
+        checkpoint_node: str,
+        state: AgentState,
+        approved_intent_dsl: dict[str, Any],
+        approved_intent_dsl_path: str | None,
+    ) -> AgentState:
+        if checkpoint_node not in {"dsl", "human_review"}:
+            raise ValueError(
+                "--approved-intent-dsl can only resume from a DSL or human review checkpoint."
+            )
+
+        review = {
+            "required": True,
+            "approved": True,
+            "path": approved_intent_dsl_path,
+            "source": "approved_intent_dsl",
+        }
+
+        artifacts = dict(state.get("artifacts", {}))
+        if approved_intent_dsl_path:
+            artifacts["intent_dsl_review"] = approved_intent_dsl_path
+            artifacts["approved_intent_dsl"] = approved_intent_dsl_path
+
+        metadata = dict(state.get("metadata", {}))
+        metadata["human_review"] = review
+        if approved_intent_dsl_path:
+            metadata["approved_intent_dsl"] = approved_intent_dsl_path
+
+        dsl = deepcopy(approved_intent_dsl)
+        return {
+            **state,
+            "intent_dsl": dsl,
+            "dsl": dsl,
+            "human_review": review,
+            "artifacts": artifacts,
+            "metadata": metadata,
+        }
 
     def _entry_point(self, state: AgentState) -> str:
         metadata = state.get("metadata", {})

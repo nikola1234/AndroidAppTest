@@ -110,6 +110,12 @@ python main.py --case-file tests/test_cases_example.yaml --thread-id login-debug
 python main.py --case-file tests/test_cases_example.yaml --review-intent-dsl
 ```
 
+如果 review 时拒绝了生成结果，可以先修改 `reports/reviews/*_intent_dsl.yaml`，再从 DSL checkpoint 继续：
+
+```bash
+python main.py --resume-from-checkpoint reports/checkpoints/<thread-id>/003_dsl.json --approved-intent-dsl reports/reviews/<case>_intent_dsl.yaml
+```
+
 每个 LangGraph 节点执行后都会在 `reports/checkpoints/<thread-id>/` 下保存 JSON 快照，包含 `raw_case`、`intent_dsl`、`resolved_dsl`、`generated_files`、执行结果、失败类型和 artifacts 路径等排查信息。
 
 也可以从某个 JSON checkpoint 继续执行：

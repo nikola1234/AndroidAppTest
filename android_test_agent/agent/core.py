@@ -51,8 +51,19 @@ class AndroidTestAgent:
     ) -> AgentState:
         return self._graph.run(raw_case, thread_id=thread_id, source_case_path=source_case_path)
 
-    def resume_from_checkpoint(self, checkpoint_path: str, thread_id: str | None = None) -> AgentState:
-        return self._graph.resume_from_checkpoint(checkpoint_path, thread_id=thread_id)
+    def resume_from_checkpoint(
+        self,
+        checkpoint_path: str,
+        thread_id: str | None = None,
+        approved_intent_dsl: dict | None = None,
+        approved_intent_dsl_path: str | None = None,
+    ) -> AgentState:
+        return self._graph.resume_from_checkpoint(
+            checkpoint_path,
+            thread_id=thread_id,
+            approved_intent_dsl=approved_intent_dsl,
+            approved_intent_dsl_path=approved_intent_dsl_path,
+        )
 
     def close(self) -> None:
         self._graph.close()

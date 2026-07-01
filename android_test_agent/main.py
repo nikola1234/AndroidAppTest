@@ -6,9 +6,11 @@ import sys
 from pathlib import Path
 
 from dotenv import load_dotenv
+import yaml
 
 from android_test_agent.agent import AndroidTestAgent, AndroidTestConfig
 from android_test_agent.agent.nodes.human_review import HumanReviewRejected
+from android_test_agent.dsl.schema import validate_intent_dsl
 
 
 def parse_args() -> argparse.Namespace:
@@ -18,10 +20,17 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--execute", action="store_true", help="Run generated pytest code.")
     parser.add_argument("--thread-id", help="Checkpoint thread id used to group this run.")
     parser.add_argument("--resume-from-checkpoint", help="Path to a JSON checkpoint to resume from.")
+    parser.add_argument(
+        "--approved-intent-dsl",
+        help="Path to a reviewed intent DSL YAML to use when resuming from a DSL checkpoint.",
+    )
     parser.add_argument("--review-intent-dsl", action="store_true", help="Pause for approval after intent DSL generation.")
     parser.add_argument("--llm-codegen", action="store_true", help="Use LLM-based pytest code generation.")
     parser.add_argument("--reinstall-app", action="store_true", help="Install the APK before running generated tests.")
-    return parser.parse_args()
+    args = parser.parse_args()
+    if args.approved_intent_dsl and not args.resume_from_checkpoint:
+        parser.error("--approved-intent-dsl requires --resume-from-checkpoint.")
+    return args
 
 
 def main() -> None:
@@ -43,7 +52,12 @@ def main() -> None:
     agent = AndroidTestAgent(config)
     try:
         if args.resume_from_checkpoint:
-            state = agent.resume_from_checkpoint(args.resume_from_checkpoint, thread_id=args.thread_id)
+            state = agent.resume_from_checkpoint(
+                args.resume_from_checkpoint,
+                thread_id=args.thread_id,
+                approved_intent_dsl=_read_approved_intent_dsl(args.approved_intent_dsl),
+                approved_intent_dsl_path=args.approved_intent_dsl,
+            )
         else:
             raw_case = args.case or _read_case_file(args.case_file) or _default_case()
             state = agent.run(raw_case, thread_id=args.thread_id, source_case_path=args.case_file)
@@ -59,6 +73,16 @@ def _read_case_file(case_file: str | None) -> str | None:
     if not case_file:
         return None
     return Path(case_file).read_text(encoding="utf-8")
+
+
+def _read_approved_intent_dsl(path: str | None) -> dict | None:
+    if not path:
+        return None
+    data = yaml.safe_load(Path(path).read_text(encoding="utf-8"))
+    if not isinstance(data, dict):
+        raise ValueError(f"Approved intent DSL must be a YAML object: {path}")
+    validate_intent_dsl(data)
+    return data
 
 
 def _default_case() -> str:
