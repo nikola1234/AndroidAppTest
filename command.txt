@@ -48,3 +48,20 @@ generated/tests/test_01_app_launch_home_categories.py::test_01_app_launch_home_c
 
 $env:ATA_REVIEW_INTENT_DSL="true"
 python main.py  --case-file tests\ApiDemos\02_views_navigation_back.yaml --review-intent-dsl
+
+python main.py --resume-from-checkpoint reports\checkpoints\<thread-id>\003_dsl.json --approved-intent-dsl reports\reviews\xxx_intent_dsl.yaml
+
+## 自动 Appium 与失败诊断
+
+# 推荐：让 agent 在执行 pytest 前自动检查/启动 Appium，并保存 Appium log。
+python main.py --case-file tests\ApiDemos\03_controls_light_theme_form.yaml --execute
+
+# 如果需要手动启动 Appium，使用固定日志路径，便于失败后排查。
+appium --address 127.0.0.1 --port 4723 --log .\artifacts\appium_logs\appium.log --log-level debug
+
+# 失败后重点查看：
+# artifacts\appium_logs\
+# artifacts\logcat\
+# artifacts\screenshots\
+# artifacts\ui_dumps\
+# artifacts\traces\

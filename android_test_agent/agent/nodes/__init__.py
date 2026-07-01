@@ -7,6 +7,7 @@ from android_test_agent.agent.nodes.debug import DebugNode
 from android_test_agent.agent.nodes.dsl import DslNode
 from android_test_agent.agent.nodes.element import ElementNode
 from android_test_agent.agent.nodes.executor import ExecutorNode
+from android_test_agent.agent.nodes.failure_artifacts import FailureArtifactsNode
 from android_test_agent.agent.nodes.human_review import HumanReviewNode
 from android_test_agent.agent.nodes.llm_codegen import LlmCodegenNode
 from android_test_agent.agent.nodes.planner import PlannerNode
@@ -22,6 +23,7 @@ __all__ = [
     "DslNode",
     "ElementNode",
     "ExecutorNode",
+    "FailureArtifactsNode",
     "HumanReviewNode",
     "LlmCodegenNode",
     "PlannerNode",

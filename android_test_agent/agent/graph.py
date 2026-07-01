@@ -27,6 +27,7 @@ class AgentGraph:
         codegen: Node,
         executor: Node,
         validator: Node,
+        failure_artifacts: Node,
         retrier: Node,
         wait_strategy: Node,
         debug: Node,
@@ -41,6 +42,7 @@ class AgentGraph:
         self._codegen = codegen
         self._executor = executor
         self._validator = validator
+        self._failure_artifacts = failure_artifacts
         self._retrier = retrier
         self._wait_strategy = wait_strategy
         self._debug = debug
@@ -136,6 +138,7 @@ class AgentGraph:
         graph.add_node("codegen", self._checkpointed("codegen", self._codegen))
         graph.add_node("executor", self._checkpointed("executor", self._executor))
         graph.add_node("validator", self._checkpointed("validator", self._validator))
+        graph.add_node("failure_artifacts", self._checkpointed("failure_artifacts", self._failure_artifacts))
         graph.add_node("retrier", self._checkpointed("retrier", self._retrier))
         graph.add_node("wait_strategy", self._checkpointed("wait_strategy", self._wait_strategy))
         graph.add_node("debug", self._checkpointed("debug", self._debug))
@@ -151,6 +154,7 @@ class AgentGraph:
                 "codegen": "codegen",
                 "executor": "executor",
                 "validator": "validator",
+                "failure_artifacts": "failure_artifacts",
                 "retrier": "retrier",
                 "wait_strategy": "wait_strategy",
                 "debug": "debug",
@@ -164,8 +168,9 @@ class AgentGraph:
         graph.add_edge("element", "codegen")
         graph.add_edge("codegen", "executor")
         graph.add_edge("executor", "validator")
+        graph.add_edge("validator", "failure_artifacts")
         graph.add_conditional_edges(
-            "validator",
+            "failure_artifacts",
             self._route_after_validation,
             {
                 "locator": "retrier",
@@ -261,20 +266,24 @@ class AgentGraph:
             "element": "codegen",
             "codegen": "executor",
             "executor": "validator",
+            "validator": "failure_artifacts",
             "retrier": "dsl",
             "wait_strategy": "element",
             "debug": "planner",
         }
-        if node_name == "validator":
-            route = self._route_after_validation(state)
-            return {
-                "locator": "retrier",
-                "timeout": "wait_strategy",
-                "assertion": "debug",
-                "unknown": "debug",
-                "end": "end",
-            }.get(route, "end")
+        if node_name == "failure_artifacts":
+            return self._next_node_after_failure_artifacts(state)
         return mapping.get(node_name, "analyzer")
+
+    def _next_node_after_failure_artifacts(self, state: AgentState) -> str:
+        route = self._route_after_validation(state)
+        return {
+            "locator": "retrier",
+            "timeout": "wait_strategy",
+            "assertion": "debug",
+            "unknown": "debug",
+            "end": "end",
+        }.get(route, "end")
 
     def _route_after_validation(self, state: AgentState) -> str:
         validation = state.get("validation_result", {})
