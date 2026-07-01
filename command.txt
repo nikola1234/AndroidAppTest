@@ -48,3 +48,15 @@ generated/tests/test_01_app_launch_home_categories.py::test_01_app_launch_home_c
 
 $env:ATA_REVIEW_INTENT_DSL="true"
 python main.py  --case-file tests\ApiDemos\02_views_navigation_back.yaml --review-intent-dsl
+(.venv) PS D:\android_test\AndroidAppTest> python -m pytest .\generated\tests\test_02_views_navigation_back.py  -vv -s --tb=short
+===================================================================================== test session starts =====================================================================================
+platform win32 -- Python 3.14.6, pytest-8.4.2, pluggy-1.6.0 -- D:\android_test\AndroidAppTest\.venv\Scripts\python.exe
+cachedir: .pytest_cache
+rootdir: D:\android_test\AndroidAppTest
+plugins: anyio-4.14.1, langsmith-0.9.3
+collected 1 item
+
+generated/tests/test_02_views_navigation_back.py::test_02_views_navigation_back PASSED
+
+===================================================================================== 1 passed in 10.53s ======================================================================================
+(.venv) PS D:\android_test\AndroidAppTest>
