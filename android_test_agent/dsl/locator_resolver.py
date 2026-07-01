@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 import hashlib
 import json
 from pathlib import Path
+import re
 from typing import Any
 
 import yaml
@@ -59,7 +60,7 @@ class LocatorResolver:
         action: str | None = None,
     ) -> dict[str, Any]:
         existing = self._existing_locator(target)
-        if existing:
+        if existing and self._locator_allowed_for_app(existing):
             return self._with_existing_locator(target, existing, page_source=page_source, action=action)
 
         query = self._target_query(target)
@@ -138,6 +139,8 @@ class LocatorResolver:
             "action": action,
             "source": target_dict.get("locator_source", "runtime"),
             "score": target_dict.get("locator_score"),
+            "app_package": self._config.app_package,
+            "locator_package": self._locator_package(locator),
             "page_hash": self._page_hash(page_source),
             "updated_at": datetime.now(timezone.utc).isoformat(),
         }
@@ -208,6 +211,9 @@ class LocatorResolver:
             locator = item.get("locator")
             if not self._is_locator(locator):
                 continue
+            normalized_locator = {"by": str(locator["by"]), "value": str(locator["value"])}
+            if not self._locator_allowed_for_app(normalized_locator):
+                continue
             names = [str(item.get("name", "")), *[str(alias) for alias in item.get("aliases", [])]]
             normalized_names = [name.lower() for name in names if name]
             if target_name and target_name in normalized_names:
@@ -223,7 +229,7 @@ class LocatorResolver:
                 continue
             matches.append(
                 LocatorMatch(
-                    locator={"by": str(locator["by"]), "value": str(locator["value"])},
+                    locator=normalized_locator,
                     score=score,
                     source="manual_mapping",
                     reason=reason,
@@ -238,13 +244,26 @@ class LocatorResolver:
             locator = item.get("locator")
             if not self._is_locator(locator):
                 continue
+            normalized_locator = {"by": str(locator["by"]), "value": str(locator["value"])}
+            if not self._memory_item_allowed_for_app(item, normalized_locator):
+                continue
             matches.append(
                 LocatorMatch(
-                    locator={"by": str(locator["by"]), "value": str(locator["value"])},
+                    locator=normalized_locator,
                     score=float(item.get("score") or 0.85),
                     source="element_memory",
                     reason="historical element memory match",
-                    metadata={key: item.get(key) for key in ("name", "intent", "aliases", "page_hash")},
+                    metadata={
+                        key: item.get(key)
+                        for key in (
+                            "name",
+                            "intent",
+                            "aliases",
+                            "app_package",
+                            "locator_package",
+                            "page_hash",
+                        )
+                    },
                 )
             )
         return matches
@@ -355,6 +374,39 @@ class LocatorResolver:
 
     def _is_locator(self, value: Any) -> bool:
         return isinstance(value, dict) and bool(value.get("by")) and bool(value.get("value"))
+
+    def _memory_item_allowed_for_app(self, item: dict[str, Any], locator: dict[str, str]) -> bool:
+        expected_package = self._config.app_package
+        if not expected_package:
+            return True
+
+        memory_package = item.get("app_package")
+        if memory_package and memory_package != expected_package:
+            return False
+
+        return self._locator_allowed_for_app(locator)
+
+    def _locator_allowed_for_app(self, locator: dict[str, str]) -> bool:
+        expected_package = self._config.app_package
+        locator_package = self._locator_package(locator)
+        if not expected_package or not locator_package:
+            return True
+        return locator_package in {expected_package, "android"}
+
+    def _locator_package(self, locator: dict[str, str]) -> str | None:
+        value = str(locator.get("value") or "")
+        resource_id = value if locator.get("by") == "id" else ""
+        if not resource_id:
+            match = re.search(r'resourceId\("([^"]+)"\)', value)
+            if match:
+                resource_id = match.group(1)
+        if not resource_id:
+            match = re.search(r"@resource-id\s*=\s*['\"]([^'\"]+)['\"]", value)
+            if match:
+                resource_id = match.group(1)
+        if ":id/" not in resource_id:
+            return None
+        return resource_id.split(":id/", maxsplit=1)[0]
 
     def _looks_like_locator_value(self, value: str) -> bool:
         return ":id/" in value or value.startswith("/") or value.startswith("//*[@")

@@ -106,6 +106,7 @@ class UIHierarchyParser:
 
     def _score(self, element: UIElement, query: str, action: str | None) -> tuple[float, str]:
         score = 0.0
+        semantic_score = 0.0
         reasons: list[str] = []
         query_tokens = self._tokens(query)
         haystacks = {
@@ -122,19 +123,26 @@ class UIHierarchyParser:
             overlap = query_tokens & value_tokens
             if overlap:
                 weight = 0.35 if label == "resource-id" else 0.3
-                score += weight * len(overlap)
+                match_score = weight * len(overlap)
+                score += match_score
+                semantic_score += match_score
                 reasons.append(f"{label} token match: {', '.join(sorted(overlap))}")
             if self._normalized(query) and self._normalized(query) in self._normalized(value):
                 score += 0.4
+                semantic_score += 0.4
                 reasons.append(f"{label} contains query")
             if self._normalized(value) and self._normalized(value) in self._normalized(query):
                 score += 0.25
+                semantic_score += 0.25
                 reasons.append(f"query contains {label}")
 
         role_score, role_reason = self._role_score(element, action, query)
         score += role_score
         if role_reason:
             reasons.append(role_reason)
+
+        if semantic_score <= 0 and role_score <= 0:
+            return 0.0, ""
 
         if element.resource_id:
             score += 0.1
@@ -147,17 +155,19 @@ class UIHierarchyParser:
     def _role_score(self, element: UIElement, action: str | None, query: str) -> tuple[float, str]:
         class_name = element.class_name.lower()
         normalized_query = self._normalized(query)
-        if action == "input" and ("edittext" in class_name or "input" in normalized_query):
+        if action == "input" and "edittext" in class_name:
             return 0.25, "input-like element"
-        if action == "tap" and (
-            "button" in class_name
-            or element.clickable
-            or "button" in normalized_query
-            or "btn" in normalized_query
+        if "checkbox" in normalized_query and "checkbox" in class_name:
+            return 0.25, "checkbox-like element"
+        if "radio" in normalized_query and "radiobutton" in class_name:
+            return 0.25, "radio-like element"
+        if (
+            ("toggle" in normalized_query or "switch" in normalized_query)
+            and ("togglebutton" in class_name or "switch" in class_name)
         ):
+            return 0.25, "toggle-like element"
+        if action == "tap" and "button" in class_name:
             return 0.2, "tap-like element"
-        if action in {"assert_visible", "wait_visible"} and ("textview" in class_name or element.text):
-            return 0.15, "visible text-like element"
         return 0.0, ""
 
     def _locator_candidates(self, element: UIElement) -> list[dict[str, str]]:
